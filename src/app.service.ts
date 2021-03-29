@@ -10,13 +10,6 @@ export class AppService {
   }
 
   getHello(): string {
-    switch (this.config.helloTarget) {
-      case 'earth':
-        return 'Hello Earth!';
-      case 'space':
-        return 'Hello Space!';
-      default:
-        return 'Hello Ether!';
-    }
+    return `${this.config.hello} ${this.config.target}`;
   }
 }

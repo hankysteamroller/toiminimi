@@ -1,28 +1,49 @@
-import { Either, left, right } from 'fp-ts/Either';
+import { chain, Either, left, right } from 'fp-ts/Either';
+import { pipe } from 'fp-ts/pipeable';
 import { isString } from 'lodash';
 
-export type HelloTargetEnvValidationError = string;
+export type EnvValidationError = string;
 
-export type AppConfigValidationError = HelloTargetEnvValidationError;
+type HelloConfig = 'hello' | 'hi';
+type TargetConfig = 'earth' | 'space';
 
-type HelloTargetConfig = 'earth' | 'space';
 export interface AppConfig {
-  helloTarget: HelloTargetConfig;
+  hello: HelloConfig;
+  target: TargetConfig;
 }
 
-const isHelloTarget = (i: unknown): i is HelloTargetConfig =>
+const isHello = (i: unknown): i is HelloConfig =>
+  isString(i) && ['hello', 'hi'].includes(i);
+
+const isTarget = (i: unknown): i is TargetConfig =>
   isString(i) && ['earth', 'space'].includes(i);
 
-export const createAppConfig: () => Either<
-  AppConfigValidationError,
-  AppConfig
+const createHelloConfig: () => Either<
+  EnvValidationError,
+  Omit<AppConfig, 'target'>
 > = () => {
-  const val = process.env.HELLO_TARGET;
-  if (isHelloTarget(val)) {
-    return right({ helloTarget: val });
+  const val = process.env.HELLO;
+  if (isHello(val)) {
+    return right({ hello: val });
   } else {
-    return left(
-      'AppConfig: HELLO_TARGET environment variable validation failed',
-    );
+    return left('AppConfig: HELLO environment variable validation failed');
   }
 };
+
+const createTargetConfig: (
+  hc: Omit<AppConfig, 'target'>,
+) => Either<EnvValidationError, AppConfig> = (
+  hc: Omit<AppConfig, 'target'>,
+) => {
+  const val = process.env.TARGET;
+  if (isTarget(val)) {
+    return right({ ...hc, target: val });
+  } else {
+    return left('AppConfig: TARGET environment variable validation failed');
+  }
+};
+
+export const createAppConfig: () => Either<
+  EnvValidationError,
+  AppConfig
+> = () => pipe(createHelloConfig(), chain(createTargetConfig));
