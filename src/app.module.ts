@@ -12,7 +12,7 @@ import { getConfig } from './config';
   providers: [
     {
       provide: APP_CONFIG,
-      useValue: getConfig(createAppConfig()),
+      useValue: getConfig(createAppConfig(process.env)),
     },
     AppService,
   ],

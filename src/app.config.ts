@@ -1,49 +1,58 @@
-import { chain, Either, left, right } from 'fp-ts/Either';
+import { chain, Either, left, map, right } from 'fp-ts/Either';
 import { pipe } from 'fp-ts/pipeable';
-import { isString } from 'lodash';
+import { has, isString } from 'lodash';
 
 export type EnvValidationError = string;
 
 type HelloConfig = 'hello' | 'hi';
 type TargetConfig = 'earth' | 'space';
 
+interface RawAppConfig {
+  HELLO: HelloConfig;
+  TARGET: TargetConfig;
+}
 export interface AppConfig {
   hello: HelloConfig;
   target: TargetConfig;
 }
 
-const isHello = (i: unknown): i is HelloConfig =>
-  isString(i) && ['hello', 'hi'].includes(i);
+const hasHello = (c: unknown): c is { HELLO: unknown } => has(c, 'HELLO');
 
-const isTarget = (i: unknown): i is TargetConfig =>
-  isString(i) && ['earth', 'space'].includes(i);
+const isHello = (c: unknown): c is HelloConfig =>
+  isString(c) && ['hello', 'hi'].includes(c);
 
-const createHelloConfig: () => Either<
-  EnvValidationError,
-  Omit<AppConfig, 'target'>
-> = () => {
-  const val = process.env.HELLO;
-  if (isHello(val)) {
-    return right({ hello: val });
-  } else {
-    return left('AppConfig: HELLO environment variable validation failed');
-  }
+const hasTarget = (c: unknown): c is { TARGET: unknown } => has(c, 'TARGET');
+
+const isTarget = (c: unknown): c is TargetConfig =>
+  isString(c) && ['earth', 'space'].includes(c);
+
+const validateHelloConfig: (
+  c: unknown,
+) => Either<EnvValidationError, unknown> = (c: unknown) =>
+  hasHello(c) && isHello(c.HELLO)
+    ? right(c)
+    : left('AppConfig: HELLO environment variable validation failed');
+
+const validateTargetConfig: (
+  c: unknown,
+) => Either<EnvValidationError, unknown> = (c: unknown) =>
+  hasTarget(c) && isTarget(c.TARGET)
+    ? right(c)
+    : left('AppConfig: TARGET environment variable validation failed');
+
+const validateAppConfig: (c: unknown) => Either<EnvValidationError, unknown> = (
+  c: unknown,
+) => pipe(validateHelloConfig(c), chain(validateTargetConfig));
+
+const toAppConfig: (c: unknown) => AppConfig = (c: unknown) => {
+  const c2 = c as RawAppConfig;
+  return {
+    hello: c2.HELLO,
+    target: c2.TARGET,
+  };
 };
 
-const createTargetConfig: (
-  hc: Omit<AppConfig, 'target'>,
-) => Either<EnvValidationError, AppConfig> = (
-  hc: Omit<AppConfig, 'target'>,
-) => {
-  const val = process.env.TARGET;
-  if (isTarget(val)) {
-    return right({ ...hc, target: val });
-  } else {
-    return left('AppConfig: TARGET environment variable validation failed');
-  }
-};
-
-export const createAppConfig: () => Either<
-  EnvValidationError,
-  AppConfig
-> = () => pipe(createHelloConfig(), chain(createTargetConfig));
+export const createAppConfig: (
+  config: unknown,
+) => Either<EnvValidationError, AppConfig> = (config: unknown) =>
+  pipe(validateAppConfig(config), map(toAppConfig));
