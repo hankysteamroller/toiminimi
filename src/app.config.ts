@@ -1,6 +1,15 @@
-import { chain, Either, left, map, right } from 'fp-ts/Either';
+import {
+  getApplicativeValidation,
+  Either,
+  left,
+  map,
+  mapLeft,
+  right,
+} from 'fp-ts/Either';
+import { getSemigroup, NonEmptyArray } from 'fp-ts/NonEmptyArray';
 import { pipe } from 'fp-ts/pipeable';
 import { has, isString } from 'lodash';
+import { sequenceT } from 'fp-ts/Apply';
 
 export type EnvValidationError = string;
 
@@ -40,10 +49,6 @@ const validateTargetConfig: (
     ? right(c)
     : left('AppConfig: TARGET environment variable validation failed');
 
-const validateAppConfig: (c: unknown) => Either<EnvValidationError, unknown> = (
-  c: unknown,
-) => pipe(validateHelloConfig(c), chain(validateTargetConfig));
-
 const toAppConfig: (c: unknown) => AppConfig = (c: unknown) => {
   const c2 = c as RawAppConfig;
   return {
@@ -52,7 +57,30 @@ const toAppConfig: (c: unknown) => AppConfig = (c: unknown) => {
   };
 };
 
+function liftToArrayOfErrs<E, A>(
+  check: (a: A) => Either<E, A>,
+): (a: A) => Either<NonEmptyArray<E>, A> {
+  return (a) =>
+    pipe(
+      check(a),
+      mapLeft((a) => [a]),
+    );
+}
+
+const validateHelloConfigL = liftToArrayOfErrs(validateHelloConfig);
+const validateTargetConfigL = liftToArrayOfErrs(validateTargetConfig);
+
+const applicativeValidation = getApplicativeValidation(
+  getSemigroup<EnvValidationError>(),
+);
+
 export const createAppConfig: (
   config: unknown,
-) => Either<EnvValidationError, AppConfig> = (config: unknown) =>
-  pipe(validateAppConfig(config), map(toAppConfig));
+) => Either<NonEmptyArray<EnvValidationError>, AppConfig> = (config: unknown) =>
+  pipe(
+    sequenceT(applicativeValidation)(
+      validateHelloConfigL(config),
+      validateTargetConfigL(config),
+    ),
+    map(toAppConfig),
+  );
