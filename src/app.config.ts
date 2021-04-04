@@ -63,8 +63,8 @@ function liftToArrayOfErrs<E, A>(
     );
 }
 
-const validateHelloConfigL = liftToArrayOfErrs(parseHelloConfig);
-const validateTargetConfigL = liftToArrayOfErrs(parseTargetConfig);
+const parseHelloConfigL = liftToArrayOfErrs(parseHelloConfig);
+const parseTargetConfigL = liftToArrayOfErrs(parseTargetConfig);
 
 const applicativeValidation = getApplicativeValidation(
   getSemigroup<EnvValidationError>(),
@@ -75,8 +75,8 @@ export const createAppConfig: (
 ) => Either<NonEmptyArray<EnvValidationError>, AppConfig> = (config: unknown) =>
   pipe(
     sequenceT(applicativeValidation)(
-      validateHelloConfigL(config),
-      validateTargetConfigL(config),
+      parseHelloConfigL(config),
+      parseTargetConfigL(config),
     ),
     map(toAppConfig),
   );
