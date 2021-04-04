@@ -16,10 +16,6 @@ export type EnvValidationError = string;
 type HelloConfig = 'hello' | 'hi';
 type TargetConfig = 'earth' | 'space';
 
-interface RawAppConfig {
-  HELLO: HelloConfig;
-  TARGET: TargetConfig;
-}
 export interface AppConfig {
   hello: HelloConfig;
   target: TargetConfig;
@@ -35,27 +31,27 @@ const hasTarget = (c: unknown): c is { TARGET: unknown } => has(c, 'TARGET');
 const isTarget = (c: unknown): c is TargetConfig =>
   isString(c) && ['earth', 'space'].includes(c);
 
-const validateHelloConfig: (
+const parseHelloConfig: (
   c: unknown,
-) => Either<EnvValidationError, unknown> = (c: unknown) =>
+) => Either<EnvValidationError, HelloConfig> = (c: unknown) =>
   hasHello(c) && isHello(c.HELLO)
-    ? right(c)
+    ? right(c.HELLO)
     : left('AppConfig: HELLO environment variable validation failed');
 
-const validateTargetConfig: (
+const parseTargetConfig: (
   c: unknown,
-) => Either<EnvValidationError, unknown> = (c: unknown) =>
+) => Either<EnvValidationError, TargetConfig> = (c: unknown) =>
   hasTarget(c) && isTarget(c.TARGET)
-    ? right(c)
+    ? right(c.TARGET)
     : left('AppConfig: TARGET environment variable validation failed');
 
-const toAppConfig: (c: unknown) => AppConfig = (c: unknown) => {
-  const c2 = c as RawAppConfig;
-  return {
-    hello: c2.HELLO,
-    target: c2.TARGET,
-  };
-};
+const toAppConfig: ([hello, target]: [
+  HelloConfig,
+  TargetConfig,
+]) => AppConfig = ([hello, target]: [HelloConfig, TargetConfig]) => ({
+  hello,
+  target,
+});
 
 function liftToArrayOfErrs<E, A>(
   check: (a: A) => Either<E, A>,
@@ -67,8 +63,8 @@ function liftToArrayOfErrs<E, A>(
     );
 }
 
-const validateHelloConfigL = liftToArrayOfErrs(validateHelloConfig);
-const validateTargetConfigL = liftToArrayOfErrs(validateTargetConfig);
+const validateHelloConfigL = liftToArrayOfErrs(parseHelloConfig);
+const validateTargetConfigL = liftToArrayOfErrs(parseTargetConfig);
 
 const applicativeValidation = getApplicativeValidation(
   getSemigroup<EnvValidationError>(),
