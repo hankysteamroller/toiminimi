@@ -1,4 +1,9 @@
-import { Controller, Get, InternalServerErrorException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  InternalServerErrorException,
+  Param,
+} from '@nestjs/common';
 
 import { fold } from 'fp-ts/Either';
 
@@ -11,9 +16,9 @@ const onSuccess = (s: any) => s;
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  @Get('/file1')
-  getFile1() {
-    const service = this.appService.getFileService('./data/test.txt');
+  @Get('/file/:name/:suffix')
+  getFile1(@Param('name') name: string, @Param('suffix') suffix: string) {
+    const service = this.appService.getFileService(`./data/${name}.${suffix}`);
     return service().then((a) => fold(onError, onSuccess)(a));
   }
 
