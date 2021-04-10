@@ -2,11 +2,13 @@ import * as fs from 'fs';
 import { Inject, Injectable } from '@nestjs/common';
 import { promisify } from 'util';
 
-import { TaskEither, tryCatchK } from 'fp-ts/TaskEither';
+import { pipe } from 'fp-ts/pipeable';
+import { fromEither, chain, TaskEither, tryCatchK } from 'fp-ts/TaskEither';
 import { toError } from 'fp-ts/Either';
 
 import { AppConfig } from './app.config';
 import { APP_CONFIG } from './constants';
+import { fromCsvString } from './domain/transaction';
 
 async function readFile(path: string): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -30,7 +32,10 @@ export class AppService {
   }
 
   getFileService(path: string): TaskEither<Error, string> {
-    return fpReadFileUTF(path);
+    return pipe(
+      fpReadFileUTF(path),
+      chain((i) => fromEither(fromCsvString(i))),
+    );
   }
 
   getFileTraditional(path: string): Promise<string> {
