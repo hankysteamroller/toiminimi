@@ -21,9 +21,4 @@ export class AppController {
     const service = this.appService.getFileService(`./data/${name}.${suffix}`);
     return service().then((a) => fold(onError, onSuccess)(a));
   }
-
-  @Get('/file2')
-  getFile2() {
-    return this.appService.getFileTraditional('./data/test.txt');
-  }
 }

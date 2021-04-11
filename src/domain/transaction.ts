@@ -1,10 +1,10 @@
 import { compose } from 'lodash/fp';
-import { Either, right } from 'fp-ts/Either';
+import { Either, tryCatch, toError } from 'fp-ts/Either';
 import parse = require('csv-parse/lib/sync');
-import { Options } from 'csv-parse';
+import { Options as CsvParseOptions } from 'csv-parse';
 
-interface Transaction {
-  amount: number; // TODO: Money
+interface OpCsvTransaction {
+  amount: number;
   archiveId: string;
   bankBic: string;
   description: string;
@@ -17,13 +17,12 @@ interface Transaction {
   valueDate: Date;
 }
 
-const opTransactionsCsvOptions = {
+const opCsvTransactionOptions: CsvParseOptions = {
   columns: true,
   delimiter: ';',
   relaxColumnCount: true,
 };
 
-// string -> string
 function removeDoubleQuotes(i: string): string {
   return i.replace(/"/g, '');
 }
@@ -32,15 +31,13 @@ function removeTrailingWhitespace(i: string): string {
   return i.trim();
 }
 
-const csvParseWithOptions = (options: Options) => (i: string) =>
-  parse(i, options);
+const parseC = (options: CsvParseOptions) => (i: string) =>
+  tryCatch(() => parse(i, options), toError) as Either<Error, string>;
 
 export function fromCsvString(i: string): Either<Error, string> {
-  const parsed = compose(
-    csvParseWithOptions(opTransactionsCsvOptions),
+  return compose(
+    parseC(opCsvTransactionOptions),
     removeTrailingWhitespace,
     removeDoubleQuotes,
   )(i);
-
-  return right(JSON.stringify(parsed));
 }
