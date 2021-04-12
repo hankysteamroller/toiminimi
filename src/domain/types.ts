@@ -1,18 +1,18 @@
-import { DateTime } from 'luxon';
+// import { DateTime } from 'luxon';
 
-type Money = number;
-type TransactionDescription =
+export type Money = number;
+export type TransactionDescription =
   | 'TILISIIRTO'
   | 'VIITESIIRTO'
   | 'PANO'
   | 'MAKSUPALVELU'
   | 'PALVELUMAKSU';
 
-interface Transaction {
+export interface Transaction {
   amount: Money;
-  description: TransactionDescription;
-  message: string;
-  owner: string;
-  reference: string;
-  transactionDate: DateTime;
+  //   description: TransactionDescription;
+  //   message: string;
+  //   owner: string;
+  //   reference: string;
+  //   transactionDate: DateTime;
 }

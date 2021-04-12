@@ -8,8 +8,9 @@ import {
 import { fold } from 'fp-ts/Either';
 
 import { AppService } from './app.service';
+import { Err } from './domain/transaction';
 
-const onError = (e: Error) => new InternalServerErrorException(e);
+const onError = (e: Err) => new InternalServerErrorException(e);
 const onSuccess = (s: any) => s;
 
 @Controller()

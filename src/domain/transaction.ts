@@ -1,10 +1,36 @@
-import { compose } from 'lodash/fp';
-import { Either, tryCatch, toError } from 'fp-ts/Either';
-import parse = require('csv-parse/lib/sync');
 import { Options as CsvParseOptions } from 'csv-parse';
 
-interface OpCsvTransaction {
-  amount: number;
+import { array } from 'fp-ts/Array';
+import { getSemigroup, NonEmptyArray } from 'fp-ts/NonEmptyArray';
+import {
+  chainW,
+  either,
+  Either,
+  getApplicativeValidation,
+  right,
+  left,
+  map,
+  tryCatch,
+  toError,
+} from 'fp-ts/Either';
+import { pipe } from 'fp-ts/lib/pipeable';
+import { sequenceT } from 'fp-ts/Apply';
+
+import { isMoney } from './typeguards';
+import { liftToArrayOfErrs2, trace } from '../fp-utils';
+import { Money, Transaction } from './types';
+
+import parse = require('csv-parse/lib/sync');
+
+type CsvParseErr = Error;
+type TransactionParseSingleErr = string;
+type TransactionParseErr = NonEmptyArray<TransactionParseSingleErr>;
+export type Err = CsvParseErr | TransactionParseErr;
+
+const AMOUNT_KEY = 'M\uFFFD\uFFFDr\uFFFD EUROA';
+
+export interface OpCsvTransaction {
+  [AMOUNT_KEY]: string;
   archiveId: string;
   bankBic: string;
   description: string;
@@ -12,9 +38,9 @@ interface OpCsvTransaction {
   owner: string;
   receiverAccount: string;
   reference: string;
-  transactionDate: Date;
-  typeCode: number;
-  valueDate: Date;
+  transactionDate: string;
+  typeCode: string;
+  valueDate: string;
 }
 
 const opCsvTransactionOptions: CsvParseOptions = {
@@ -23,21 +49,72 @@ const opCsvTransactionOptions: CsvParseOptions = {
   relaxColumnCount: true,
 };
 
-function removeDoubleQuotes(i: string): string {
-  return i.replace(/"/g, '');
+function removeDoubleQuotes(a: string): string {
+  return a.replace(/"/g, '');
 }
 
-function removeTrailingWhitespace(i: string): string {
-  return i.trim();
+function removeTrailingWhitespace(a: string): string {
+  return a.trim();
 }
 
-const parseC = (options: CsvParseOptions) => (i: string) =>
-  tryCatch(() => parse(i, options), toError) as Either<Error, string>;
+function replaceCommasWithDots(a: string): string {
+  return a.replace(/,/g, '.');
+}
 
-export function fromCsvString(i: string): Either<Error, string> {
-  return compose(
+const parseC = (options: CsvParseOptions) => (a: string) =>
+  tryCatch(() => parse(a, options), toError) as Either<
+    CsvParseErr,
+    OpCsvTransaction[]
+  >;
+
+function parseMoney(
+  a: OpCsvTransaction,
+): Either<TransactionParseSingleErr, Money> {
+  const money = Number(replaceCommasWithDots(a[AMOUNT_KEY]));
+  return isMoney(money)
+    ? right(money)
+    : left(`Can not parse ${money} as Money; ${JSON.stringify(a)}`);
+}
+
+function toTransaction([money]: [Money]): Transaction {
+  return {
+    amount: money,
+  };
+}
+
+const parseMoneyL = liftToArrayOfErrs2(parseMoney);
+
+const applicativeValidation = getApplicativeValidation(
+  getSemigroup<TransactionParseSingleErr>(),
+);
+
+function fromOpCsvTransaction(
+  a: OpCsvTransaction,
+): Either<TransactionParseErr, Transaction> {
+  return pipe(
+    sequenceT(applicativeValidation)(parseMoneyL(a)),
+    map(toTransaction),
+  );
+}
+
+function fromOpCsvTransactions(
+  as: OpCsvTransaction[],
+): Either<TransactionParseErr, Transaction[]> {
+  return array.traverse(either)(as, fromOpCsvTransaction);
+}
+
+function fromPreProcessedCsvString(a: string): Either<Err, Transaction[]> {
+  return pipe(
+    a,
     parseC(opCsvTransactionOptions),
+    chainW(fromOpCsvTransactions),
+  );
+}
+
+export function fromCsvString(a: string): Either<Err, Transaction[]> {
+  return pipe(
+    removeDoubleQuotes(a),
     removeTrailingWhitespace,
-    removeDoubleQuotes,
-  )(i);
+    fromPreProcessedCsvString,
+  );
 }

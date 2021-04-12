@@ -1,15 +1,17 @@
+import { has, isString } from 'lodash';
+
 import {
   getApplicativeValidation,
   Either,
   left,
   map,
-  mapLeft,
   right,
 } from 'fp-ts/Either';
 import { getSemigroup, NonEmptyArray } from 'fp-ts/NonEmptyArray';
 import { pipe } from 'fp-ts/pipeable';
-import { has, isString } from 'lodash';
 import { sequenceT } from 'fp-ts/Apply';
+
+import { liftToArrayOfErrs } from './fp-utils';
 
 export type EnvValidationError = string;
 
@@ -52,16 +54,6 @@ const toAppConfig: ([hello, target]: [
   hello,
   target,
 });
-
-function liftToArrayOfErrs<E, A>(
-  check: (a: A) => Either<E, A>,
-): (a: A) => Either<NonEmptyArray<E>, A> {
-  return (a) =>
-    pipe(
-      check(a),
-      mapLeft((a) => [a]),
-    );
-}
 
 const parseHelloConfigL = liftToArrayOfErrs(parseHelloConfig);
 const parseTargetConfigL = liftToArrayOfErrs(parseTargetConfig);

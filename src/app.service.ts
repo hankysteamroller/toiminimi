@@ -8,7 +8,8 @@ import { toError } from 'fp-ts/Either';
 
 import { AppConfig } from './app.config';
 import { APP_CONFIG } from './constants';
-import { fromCsvString } from './domain/transaction';
+import { Err, fromCsvString } from './domain/transaction';
+import { Transaction } from './domain/types';
 
 const fpReadFile = tryCatchK(promisify(fs.readFile), toError);
 const fpReadFileUTF = (path: string) =>
@@ -20,7 +21,7 @@ export class AppService {
     console.log(`AppService configured with ${JSON.stringify(config)}`);
   }
 
-  getFileService(path: string): TaskEither<Error, string> {
+  getFileService(path: string): TaskEither<Err, Transaction[]> {
     return pipe(fpReadFileUTF(path), chainEitherK(fromCsvString));
   }
 }
