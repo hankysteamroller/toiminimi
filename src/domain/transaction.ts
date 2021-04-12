@@ -6,6 +6,7 @@ import {
   chainW,
   either,
   Either,
+  fromPredicate,
   getApplicativeValidation,
   right,
   left,
@@ -70,10 +71,16 @@ const parseC = (options: CsvParseOptions) => (a: string) =>
 function parseMoney(
   a: OpCsvTransaction,
 ): Either<TransactionParseSingleErr, Money> {
-  const money = Number(replaceCommasWithDots(a[AMOUNT_KEY]));
-  return isMoney(money)
-    ? right(money)
-    : left(`Can not parse ${money} as Money; ${JSON.stringify(a)}`);
+  return pipe(
+    a[AMOUNT_KEY],
+    String,
+    replaceCommasWithDots,
+    Number,
+    fromPredicate(
+      isMoney,
+      (money) => `Can not parse ${money} as Money; ${JSON.stringify(a)}`,
+    ),
+  );
 }
 
 function toTransaction([money]: [Money]): Transaction {
