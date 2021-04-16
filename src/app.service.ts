@@ -3,12 +3,13 @@ import { Inject, Injectable } from '@nestjs/common';
 import { promisify } from 'util';
 
 import { pipe } from 'fp-ts/pipeable';
-import { chainEitherK, TaskEither, tryCatchK } from 'fp-ts/TaskEither';
+import { chainEitherK, map, TaskEither, tryCatchK } from 'fp-ts/TaskEither';
 import { toError } from 'fp-ts/Either';
 
 import { AppConfig } from './app.config';
 import { APP_CONFIG } from './constants';
 import { Err, fromCsvString } from './domain/transaction';
+import { filterOwnTransactions } from './domain/transaction-filters';
 import { Transaction } from './domain/types';
 
 const fpReadFile = tryCatchK(promisify(fs.readFile), toError);
@@ -22,6 +23,10 @@ export class AppService {
   }
 
   getFileService(path: string): TaskEither<Err, Transaction[]> {
-    return pipe(fpReadFileUTF(path), chainEitherK(fromCsvString));
+    return pipe(
+      fpReadFileUTF(path),
+      chainEitherK(fromCsvString),
+      map(filterOwnTransactions),
+    );
   }
 }
