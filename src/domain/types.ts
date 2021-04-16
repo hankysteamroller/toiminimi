@@ -1,4 +1,4 @@
-// import { DateTime } from 'luxon';
+import { DateTime } from 'luxon';
 
 export type Money = number;
 export type TransactionDescription =
@@ -8,11 +8,13 @@ export type TransactionDescription =
   | 'MAKSUPALVELU'
   | 'PALVELUMAKSU';
 
+export const TRANSACTION_PAYEE_PAYER_KEY = 'payee/payer';
+
 export interface Transaction {
   amount: Money;
   //   description: TransactionDescription;
-  //   message: string;
-  //   owner: string;
-  //   reference: string;
-  //   transactionDate: DateTime;
+  message: string;
+  [TRANSACTION_PAYEE_PAYER_KEY]: string;
+  reference: string;
+  transactionDate: DateTime;
 }
