@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon';
 
 export type Money = number;
+export type Percentage = number;
 export type TransactionDescription =
   | 'TILISIIRTO'
   | 'VIITESIIRTO'
@@ -10,6 +11,11 @@ export type TransactionDescription =
 
 export const TRANSACTION_PAYEE_PAYER_KEY = 'payee/payer';
 
+export interface TransactionMeta {
+  tax24: Money;
+  nonTax: Money;
+}
+
 export interface Transaction {
   amount: Money;
   //   description: TransactionDescription;
@@ -17,4 +23,17 @@ export interface Transaction {
   [TRANSACTION_PAYEE_PAYER_KEY]: string;
   reference: string;
   transactionDate: DateTime;
+  meta?: TransactionMeta;
 }
+
+export interface TransactionsMeta {
+  count: number;
+}
+
+export interface Transactions {
+  meta: TransactionsMeta;
+  transactions: Transaction[];
+}
+
+export type TransactionFilterType = 'own';
+export type TransactionFilter = (a: Transaction[]) => Transaction[];

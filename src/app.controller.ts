@@ -3,26 +3,34 @@ import {
   Get,
   InternalServerErrorException,
   Param,
+  Query,
 } from '@nestjs/common';
 
 import { fold } from 'fp-ts/Either';
 
 import { AppService } from './app.service';
 import { Err } from './domain/transaction';
-import { serialize } from './view/transaction.view';
-import { Transaction } from './domain/types';
+import { fromString } from './domain/transaction-filters';
+import { serialize } from './view/transactions.view';
 
 const onError = (e: Err) => new InternalServerErrorException(e);
-const onSuccess = (as: any) => as.map(serialize);
+const onSuccess = (a: any) => serialize(a) as any;
 
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  @Get('/file/:name/:suffix')
-  getFile1(@Param('name') name: string, @Param('suffix') suffix: string) {
-    const service = this.appService.getFileService(`./data/${name}.${suffix}`);
-
+  @Get('/transactions/:name/:suffix')
+  getTransactions(
+    @Param('name') name: string,
+    @Param('suffix') suffix: string,
+    @Query('filters') filters: string,
+  ) {
+    const transactionFilters = fromString(filters);
+    const service = this.appService.getTransactions(
+      `./data/${name}.${suffix}`,
+      transactionFilters,
+    );
     return service().then((a) => fold(onError, onSuccess)(a));
   }
 }

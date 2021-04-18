@@ -9,8 +9,10 @@ import { toError } from 'fp-ts/Either';
 import { AppConfig } from './app.config';
 import { APP_CONFIG } from './constants';
 import { Err, fromCsvString } from './domain/transaction';
-import { filterOwnTransactions } from './domain/transaction-filters';
-import { Transaction } from './domain/types';
+import { applyFilters } from './domain/transaction-filters';
+import { TransactionFilter, Transactions } from './domain/types';
+import { getMetas } from './domain/transaction-meta';
+import { fromTransactionList } from './domain/transactions';
 
 const fpReadFile = tryCatchK(promisify(fs.readFile), toError);
 const fpReadFileUTF = (path: string) =>
@@ -22,11 +24,16 @@ export class AppService {
     console.log(`AppService configured with ${JSON.stringify(config)}`);
   }
 
-  getFileService(path: string): TaskEither<Err, Transaction[]> {
+  getTransactions(
+    path: string,
+    filters: TransactionFilter[],
+  ): TaskEither<Err, Transactions> {
     return pipe(
       fpReadFileUTF(path),
       chainEitherK(fromCsvString),
-      map(filterOwnTransactions),
+      map(applyFilters(filters)),
+      map(getMetas),
+      map(fromTransactionList),
     );
   }
 }
