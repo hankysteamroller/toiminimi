@@ -1,0 +1,11 @@
+
+- Päättele transaktion ALV % ja merkkaa se transaktion metatietoihin -> nopeammin rivi kuntoon
+- Jos <Määrä> on +25 -> Esiintyminen <Saaja/Maksaja> Myynti Suomi 0%
+- Jos <Saaja/Maksaja> on opetusmaksuja maksavien joukossa JA <Määrä> on > 0 -> Soitonopetus <Saaja/Maksaja> Myynti Suomi 24%
+- Jos <Määrä> on -5 TAI -9 JA <Saaja/Maksaja> on "Paybyway Oy" JA <Viesti> on "DOMAINHOTELLI.FI DOMAINHOTELLI OY" -> Domainkulut Muut vähennyskelpoiset kulut 24%
+- Jos <Määrä> on -280 - -320 JA <Saaja/Maksaja> on "ILMARINEN KESKIN�INEN VAKYHT" -> YEL-perusvakuutus Eläke -ja henkilösivukulut 0%
+- Jos <Saaja/Maksaja> on "OSUUSPANKKI" JA <Viesti> sisältää "PALVELUMAKSUT" -> 2 riviä: Pankin palvelumaksu Muut vähennyskelpoiset kulut 0% ja E-laskutus Muut vähennyskelpoiset kulu 24%
+- Jos ei mikään näistä JA <MÄÄRÄ> > 40€ -> Esiintyminen <Saaja/Maksaja> Myynti Suomi 0%
+- Jos <Saaja/Maksaja> on "Telia Finland Oyj" JA <Määrä> -10 - -100 -> Puhelinkulut 50% Muut vähennyskelpoiset kulut 24% <Määrä>/2
+- Jos <Saaja/Maksaja> on "TAMPEREEN KAUPUNKI" JA <Määrä> > 0 -> Esiintyminen <Saaja/Maksaja> Myynti Suomi 0%
+- Jos <Saaja/Maksaja> on "PIRKANMAAN SENIORIPALVELUT OY" JA <Määrä> > 0 -> Esiintyminen <Saaja/Maksaja> Myynti Suomi 0%
