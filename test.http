@@ -1,4 +1,2 @@
-http://localhost:3000/file/events/csv
-http://localhost:3000/file2
-http://localhost:3000/file3
-
+http://localhost:3000/transactions/events/csv?filters=own
+http://localhost:3000/transactions/events/csv
