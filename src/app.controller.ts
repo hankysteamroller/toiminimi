@@ -6,15 +6,16 @@ import {
   Query,
 } from '@nestjs/common';
 
-import { fold } from 'fp-ts/Either';
+import { foldW } from 'fp-ts/Either';
 
 import { AppService } from './app.service';
 import { Err } from './domain/transaction';
 import { fromString } from './domain/transaction-filters';
+import { Transactions } from './domain/types';
 import { serialize } from './view/transactions.view';
 
 const onError = (e: Err) => new InternalServerErrorException(e);
-const onSuccess = (a: any) => serialize(a) as any;
+const onSuccess = (a: Transactions) => serialize(a);
 
 @Controller()
 export class AppController {
@@ -31,6 +32,6 @@ export class AppController {
       `./data/${name}.${suffix}`,
       transactionFilters,
     );
-    return service().then((a) => fold(onError, onSuccess)(a));
+    return service().then((a) => foldW(onError, onSuccess)(a));
   }
 }
