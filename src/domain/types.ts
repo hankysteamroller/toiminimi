@@ -37,3 +37,32 @@ export interface Transactions {
 
 export type TransactionFilterType = 'own';
 export type TransactionFilter = (a: Transaction[]) => Transaction[];
+
+export type BookkeepingRecordType = 'INCOME' | 'EXPENSE';
+
+type AccountGroup = number;
+
+export interface Account {
+  name: string;
+  group: AccountGroup;
+  taxPercentage: Percentage;
+}
+
+export interface AccountMap {
+  incomeAccounts: Account[];
+  expenseAccounts: Account[];
+}
+
+export interface BookkeepingRecord {
+  account: Account;
+  description: string;
+  type: BookkeepingRecordType;
+  nonTaxAmount: Money;
+  taxPercentage: Percentage;
+  taxAmount: Money;
+  totalAmount: Money;
+}
+
+export interface Bookkeeping {
+  records: BookkeepingRecord[];
+}

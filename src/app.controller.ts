@@ -11,11 +11,12 @@ import { foldW } from 'fp-ts/Either';
 import { AppService } from './app.service';
 import { Err } from './domain/transaction';
 import { fromString } from './domain/transaction-filters';
-import { Transactions } from './domain/types';
+import { BookkeepingRecord, Transactions } from './domain/types';
 import { serialize } from './view/transactions.view';
 
 const onError = (e: Err) => new InternalServerErrorException(e);
-const onSuccess = (a: Transactions) => serialize(a);
+const serializeTransactions = (a: Transactions) => serialize(a);
+const serializeBookkeepingRecords = (a: BookkeepingRecord[]) => a;
 
 @Controller()
 export class AppController {
@@ -32,6 +33,22 @@ export class AppController {
       `./data/${name}.${suffix}`,
       transactionFilters,
     );
-    return service().then((a) => foldW(onError, onSuccess)(a));
+    return service().then((a) => foldW(onError, serializeTransactions)(a));
+  }
+
+  @Get('/records/:name/:suffix')
+  getBookkeepingRecords(
+    @Param('name') name: string,
+    @Param('suffix') suffix: string,
+    @Query('filters') filters: string,
+  ) {
+    const transactionFilters = fromString(filters);
+    const service = this.appService.getBookkeepingRecords(
+      `./data/${name}.${suffix}`,
+      transactionFilters,
+    );
+    return service().then((a) =>
+      foldW(onError, serializeBookkeepingRecords)(a),
+    );
   }
 }
