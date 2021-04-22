@@ -39,6 +39,7 @@ export type TransactionFilterType = 'own';
 export type TransactionFilter = (a: Transaction[]) => Transaction[];
 
 export type BookkeepingRecordType = 'INCOME' | 'EXPENSE';
+export type IncomeSubType = 'PERFORMANCE';
 
 type AccountGroup = number;
 
@@ -54,7 +55,7 @@ export interface AccountMap {
 }
 
 export interface BookkeepingRecord {
-  account: Account;
+  account?: Account;
   description: string;
   type: BookkeepingRecordType;
   nonTaxAmount: Money;
