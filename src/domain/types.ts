@@ -40,7 +40,7 @@ export type TransactionFilter = (a: Transaction[]) => Transaction[];
 
 export type BookkeepingRecordType = 'INCOME' | 'EXPENSE';
 export type IncomeSubType = 'PERFORMANCE';
-export type ExpenseSubType = 'DOMAIN_MONTHLY' | 'DOMAIN_YEARLY';
+export type ExpenseSubType = 'DOMAIN_MONTHLY' | 'DOMAIN_YEARLY' | 'YEL';
 
 type AccountGroup = number;
 

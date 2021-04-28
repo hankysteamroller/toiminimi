@@ -37,6 +37,10 @@ function buildDomainYearlyRecord(): Partial<BookkeepingRecord> {
   return pipe(getAccount('DOMAIN_YEARLY'), buildRecord('Domainin vuosimaksu'));
 }
 
+function buildYelRecord(): Partial<BookkeepingRecord> {
+  return pipe(getAccount('YEL'), buildRecord('YEL-maksu'));
+}
+
 function deduceFromTransaction(
   transaction: Transaction,
 ): Partial<BookkeepingRecord> {
@@ -54,6 +58,12 @@ function deduceFromTransaction(
     transaction.message === 'DOMAINHOTELLI.FI DOMAINHOTELLI OY'
   ) {
     return buildDomainYearlyRecord();
+  } else if (
+    transaction.amount > 280 &&
+    transaction.amount < 320 &&
+    transaction[TRANSACTION_PAYEE_PAYER_KEY] === 'ILMARINEN KESKIN�INEN VAKYHT'
+  ) {
+    return buildYelRecord();
   } else {
     return {};
   }
