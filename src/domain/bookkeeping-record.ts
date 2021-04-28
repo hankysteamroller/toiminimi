@@ -1,4 +1,7 @@
+import { pipe } from 'fp-ts/function';
+
 import {
+  Account,
   BookkeepingRecord,
   Transaction,
   TRANSACTION_PAYEE_PAYER_KEY,
@@ -9,13 +12,25 @@ import {
 } from './account';
 import { getTax } from './tax';
 
+const buildRecord: (
+  description: string,
+) => (account: Account) => Partial<BookkeepingRecord> = (
+  description: string,
+) => (account: Account) => ({
+  account,
+  description,
+  taxPercentage: account.taxPercentage,
+});
+
 function buildGreetingRecord(a: string): Partial<BookkeepingRecord> {
-  return {
-    account: getAccount('PERFORMANCE'),
-    description: `Esiintyminen ${a}`,
-    type: 'INCOME',
-    taxPercentage: 0,
-  };
+  return pipe(getAccount('PERFORMANCE'), buildRecord(`Esiintyminen ${a}`));
+}
+
+function buildDomainMonthlyRecord(): Partial<BookkeepingRecord> {
+  return pipe(
+    getAccount('DOMAIN_MONTHLY'),
+    buildRecord('Domainhotelli kk-maksu'),
+  );
 }
 
 function deduceFromTransaction(
@@ -23,6 +38,8 @@ function deduceFromTransaction(
 ): Partial<BookkeepingRecord> {
   if (transaction.amount === 25) {
     return buildGreetingRecord(transaction[TRANSACTION_PAYEE_PAYER_KEY]);
+  } else if (transaction.amount === -5) {
+    return buildDomainMonthlyRecord();
   } else {
     return {};
   }
@@ -30,11 +47,11 @@ function deduceFromTransaction(
 
 export function fromTransaction(transaction: Transaction): BookkeepingRecord {
   const partial = deduceFromTransaction(transaction);
-  const account = accountFromTransaction(transaction);
+  const account = partial.account || accountFromTransaction(transaction);
   const tax = getTax(transaction.amount, account.taxPercentage);
   const defaultRecord: BookkeepingRecord = {
-    description: 'TODO',
-    type: 'INCOME',
+    description: 'UNKNOWN',
+    type: transaction.amount > 0 ? 'INCOME' : 'EXPENSE',
     nonTaxAmount: transaction.amount - tax,
     taxPercentage: account.taxPercentage,
     taxAmount: tax,
