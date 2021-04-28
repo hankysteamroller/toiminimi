@@ -33,13 +33,27 @@ function buildDomainMonthlyRecord(): Partial<BookkeepingRecord> {
   );
 }
 
+function buildDomainYearlyRecord(): Partial<BookkeepingRecord> {
+  return pipe(getAccount('DOMAIN_YEARLY'), buildRecord('Domainin vuosimaksu'));
+}
+
 function deduceFromTransaction(
   transaction: Transaction,
 ): Partial<BookkeepingRecord> {
   if (transaction.amount === 25) {
     return buildGreetingRecord(transaction[TRANSACTION_PAYEE_PAYER_KEY]);
-  } else if (transaction.amount === -5) {
+  } else if (
+    transaction.amount === -5 &&
+    transaction[TRANSACTION_PAYEE_PAYER_KEY] === 'Paybyway Oy' &&
+    transaction.message === 'DOMAINHOTELLI.FI DOMAINHOTELLI OY'
+  ) {
     return buildDomainMonthlyRecord();
+  } else if (
+    transaction.amount === -9 &&
+    transaction[TRANSACTION_PAYEE_PAYER_KEY] === 'Paybyway Oy' &&
+    transaction.message === 'DOMAINHOTELLI.FI DOMAINHOTELLI OY'
+  ) {
+    return buildDomainYearlyRecord();
   } else {
     return {};
   }
