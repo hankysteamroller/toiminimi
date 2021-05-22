@@ -38,7 +38,7 @@ function buildDomainYearlyRecord(): Partial<BookkeepingRecord> {
 }
 
 function buildYelRecord(): Partial<BookkeepingRecord> {
-  return pipe(getAccount('YEL'), buildRecord('YEL-maksu'));
+  return pipe(getAccount('YEL'), buildRecord('YEL-perusvakuutus'));
 }
 
 function deduceFromTransaction(
