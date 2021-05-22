@@ -11,6 +11,7 @@ import {
   fromTransaction as accountFromTransaction,
 } from './account';
 import { getTax } from './tax';
+import { isDomainMonthlyTransaction } from './transaction-classifiers';
 
 const buildRecord: (
   description: string,
@@ -41,16 +42,12 @@ function buildYelRecord(): Partial<BookkeepingRecord> {
   return pipe(getAccount('YEL'), buildRecord('YEL-perusvakuutus'));
 }
 
-function deduceFromTransaction(
+function guessPartsFromTransaction(
   transaction: Transaction,
 ): Partial<BookkeepingRecord> {
   if (transaction.amount === 25) {
     return buildGreetingRecord(transaction[TRANSACTION_PAYEE_PAYER_KEY]);
-  } else if (
-    transaction.amount === -5 &&
-    transaction[TRANSACTION_PAYEE_PAYER_KEY] === 'Paybyway Oy' &&
-    transaction.message === 'DOMAINHOTELLI.FI DOMAINHOTELLI OY'
-  ) {
+  } else if (isDomainMonthlyTransaction(transaction)) {
     return buildDomainMonthlyRecord();
   } else if (
     transaction.amount === -9 &&
@@ -70,7 +67,7 @@ function deduceFromTransaction(
 }
 
 export function fromTransaction(transaction: Transaction): BookkeepingRecord {
-  const partial = deduceFromTransaction(transaction);
+  const partial = guessPartsFromTransaction(transaction);
   const account = partial.account || accountFromTransaction(transaction);
   const tax = getTax(transaction.amount, account.taxPercentage);
   const defaultRecord: BookkeepingRecord = {
