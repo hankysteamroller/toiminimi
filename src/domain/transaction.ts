@@ -10,19 +10,15 @@ import {
   fromPredicate,
   getApplicativeValidation,
   map,
-  tryCatch,
-  toError,
 } from 'fp-ts/Either';
 import { pipe } from 'fp-ts/lib/pipeable';
 import { sequenceT } from 'fp-ts/Apply';
 
+import { CsvParseErr, parseC } from '../utils/csv';
 import { isMoney } from './typeguards';
 import { liftToArrayOfErrs2, trace } from '../fp-utils';
 import { Money, Transaction, TRANSACTION_PAYEE_PAYER_KEY } from './types';
 
-import parse = require('csv-parse/lib/sync');
-
-type CsvParseErr = Error;
 type TransactionParseFieldErr = string;
 type TransactionParseErr = NonEmptyArray<TransactionParseFieldErr>;
 export type Err = CsvParseErr | TransactionParseErr;
@@ -72,12 +68,6 @@ function removeViestiPrefix(a: string): string {
 function removeLeadingZeros(a: string): string {
   return a.replace(/^0+/, '');
 }
-
-const parseC = (options: CsvParseOptions) => (a: string) =>
-  tryCatch(() => parse(a, options), toError) as Either<
-    CsvParseErr,
-    OpCsvTransaction[]
-  >;
 
 const dateTimeFromFormatC = (format: string) => (a: string) =>
   DateTime.fromFormat(a, format);
@@ -203,7 +193,7 @@ function fromOpCsvTransactions(
 function fromPreProcessedCsvString(a: string): Either<Err, Transaction[]> {
   return pipe(
     a,
-    parseC(opCsvTransactionOptions),
+    parseC<OpCsvTransaction>(opCsvTransactionOptions),
     chainW(fromOpCsvTransactions),
   );
 }
