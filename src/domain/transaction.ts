@@ -1,17 +1,10 @@
 import { DateTime } from 'luxon';
 import { Options as CsvParseOptions } from 'csv-parse';
 
-import { array } from 'fp-ts/Array';
-import { getSemigroup, NonEmptyArray } from 'fp-ts/NonEmptyArray';
-import {
-  chainW,
-  either,
-  Either,
-  fromPredicate,
-  getApplicativeValidation,
-  map,
-} from 'fp-ts/Either';
-import { pipe } from 'fp-ts/lib/pipeable';
+import * as A from 'fp-ts/Array';
+import * as NEA from 'fp-ts/NonEmptyArray';
+import * as E from 'fp-ts/Either';
+import { pipe } from 'fp-ts/function';
 import { sequenceT } from 'fp-ts/Apply';
 
 import { CsvParseErr, parseC } from '../utils/csv';
@@ -20,7 +13,7 @@ import { liftToArrayOfErrs2 } from '../fp-utils';
 import { Money, Transaction, TRANSACTION_PAYEE_PAYER_KEY } from './types';
 
 type TransactionParseFieldErr = string;
-type TransactionParseErr = NonEmptyArray<TransactionParseFieldErr>;
+type TransactionParseErr = NEA.NonEmptyArray<TransactionParseFieldErr>;
 export type Err = CsvParseErr | TransactionParseErr;
 
 const AMOUNT_KEY = 'M\uFFFD\uFFFDr\uFFFD EUROA';
@@ -74,13 +67,13 @@ const dateTimeFromFormatC = (format: string) => (a: string) =>
 
 function parseMoney(
   a: OpCsvTransaction,
-): Either<TransactionParseFieldErr, Money> {
+): E.Either<TransactionParseFieldErr, Money> {
   return pipe(
     a[AMOUNT_KEY],
     String,
     replaceCommasWithDots,
     Number,
-    fromPredicate(
+    E.fromPredicate(
       isMoney,
       (money) => `Can not parse ${money} as Money; ${JSON.stringify(a)}`,
     ),
@@ -89,11 +82,11 @@ function parseMoney(
 
 function parsepPayerPayee(
   a: OpCsvTransaction,
-): Either<TransactionParseFieldErr, string> {
+): E.Either<TransactionParseFieldErr, string> {
   return pipe(
     a[PAYER_PAYEE_KEY],
     String,
-    fromPredicate(
+    E.fromPredicate(
       (s) => s.length > 0,
       (s) => `Can not parse ${s} as Payer/Payee; Expecting string with content`,
     ),
@@ -102,11 +95,11 @@ function parsepPayerPayee(
 
 function parseValueDate(
   a: OpCsvTransaction,
-): Either<TransactionParseFieldErr, DateTime> {
+): E.Either<TransactionParseFieldErr, DateTime> {
   return pipe(
     a[VALUE_DATE_KEY],
     dateTimeFromFormatC('d.m.yyyy'),
-    fromPredicate(
+    E.fromPredicate(
       (dt) => dt.isValid,
       (dt) =>
         `Can not parse ${dt} as value date; Expecting string in format dd.mm.yyyy`,
@@ -116,13 +109,13 @@ function parseValueDate(
 
 function parseMessage(
   a: OpCsvTransaction,
-): Either<TransactionParseFieldErr, string> {
+): E.Either<TransactionParseFieldErr, string> {
   return pipe(
     a[MESSAGE_KEY],
     String,
     removeViestiPrefix,
     removeTrailingWhitespace,
-    fromPredicate(
+    E.fromPredicate(
       () => true,
       () => `Should never happen`,
     ),
@@ -131,12 +124,12 @@ function parseMessage(
 
 function parseReference(
   a: OpCsvTransaction,
-): Either<TransactionParseFieldErr, string> {
+): E.Either<TransactionParseFieldErr, string> {
   return pipe(
     a[REFERENCE_KEY],
     String,
     removeLeadingZeros,
-    fromPredicate(
+    E.fromPredicate(
       () => true,
       () => `Should never happen`,
     ),
@@ -165,13 +158,13 @@ const parseValueDateL = liftToArrayOfErrs2(parseValueDate);
 const parseMessageL = liftToArrayOfErrs2(parseMessage);
 const parseReferenceL = liftToArrayOfErrs2(parseReference);
 
-const applicativeValidation = getApplicativeValidation(
-  getSemigroup<TransactionParseFieldErr>(),
+const applicativeValidation = E.getApplicativeValidation(
+  NEA.getSemigroup<TransactionParseFieldErr>(),
 );
 
 function fromOpCsvTransaction(
   a: OpCsvTransaction,
-): Either<TransactionParseErr, Transaction> {
+): E.Either<TransactionParseErr, Transaction> {
   return pipe(
     sequenceT(applicativeValidation)(
       parseMoneyL(a),
@@ -180,25 +173,25 @@ function fromOpCsvTransaction(
       parseMessageL(a),
       parseReferenceL(a),
     ),
-    map(toTransaction),
+    E.map(toTransaction),
   );
 }
 
 function fromOpCsvTransactions(
   as: OpCsvTransaction[],
-): Either<TransactionParseErr, Transaction[]> {
-  return array.traverse(either)(as, fromOpCsvTransaction);
+): E.Either<TransactionParseErr, Transaction[]> {
+  return A.traverse(E.Applicative)(fromOpCsvTransaction)(as);
 }
 
-function fromPreProcessedCsvString(a: string): Either<Err, Transaction[]> {
+function fromPreProcessedCsvString(a: string): E.Either<Err, Transaction[]> {
   return pipe(
     a,
     parseC<OpCsvTransaction>(opCsvTransactionOptions),
-    chainW(fromOpCsvTransactions),
+    E.chainW(fromOpCsvTransactions),
   );
 }
 
-export function fromCsvString(a: string): Either<Err, Transaction[]> {
+export function fromCsvString(a: string): E.Either<Err, Transaction[]> {
   return pipe(
     removeDoubleQuotes(a),
     removeTrailingWhitespace,
