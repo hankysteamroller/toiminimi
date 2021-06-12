@@ -1,5 +1,7 @@
 import { DateTime } from 'luxon';
 
+import * as t from 'io-ts';
+
 export type Money = number;
 export type Percentage = number;
 export type TransactionDescription =
@@ -68,3 +70,10 @@ export interface BookkeepingRecord {
 export interface Bookkeeping {
   records: BookkeepingRecord[];
 }
+
+export const PianoStudent = t.type({
+  studentName: t.string,
+  payerName: t.string,
+});
+
+export type PianoStudentType = t.TypeOf<typeof PianoStudent>;
