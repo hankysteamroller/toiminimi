@@ -42,7 +42,11 @@ export type TransactionFilter = (a: Transaction[]) => Transaction[];
 
 export type BookkeepingRecordType = 'INCOME' | 'EXPENSE';
 export type IncomeSubType = 'PERFORMANCE' | 'TEACHING';
-export type ExpenseSubType = 'DOMAIN_MONTHLY' | 'DOMAIN_YEARLY' | 'YEL';
+export type ExpenseSubType =
+  | 'DOMAIN_MONTHLY'
+  | 'DOMAIN_YEARLY'
+  | 'PHONE_EXPENSE'
+  | 'YEL';
 
 type AccountGroup = number;
 

@@ -7,25 +7,30 @@ import {
   Transaction,
   TRANSACTION_PAYEE_PAYER_KEY,
 } from './types';
-import {
-  getAccount,
-  fromTransaction as accountFromTransaction,
-} from './account';
+import { getAccount, fromDefault } from './account';
 import { getTax } from './tax';
 import {
   isDomainMonthlyTransaction,
   isPerformance,
+  isPhoneExpense,
   isPianoStudentPayment,
 } from './transaction-classifiers';
 
-const buildRecord: (
-  description: string,
-) => (account: Account) => Partial<BookkeepingRecord> = (
-  description: string,
-) => (account: Account) => ({
+const buildRecord = (description: string) => (
+  account: Account,
+): Partial<BookkeepingRecord> => ({
   account,
   description,
   taxPercentage: account.taxPercentage,
+});
+
+const amountUnknown = (
+  record: Partial<BookkeepingRecord>,
+): Partial<BookkeepingRecord> => ({
+  ...record,
+  taxAmount: 0,
+  nonTaxAmount: 0,
+  totalAmount: 0,
 });
 
 function buildDomainMonthlyRecord(): Partial<BookkeepingRecord> {
@@ -45,6 +50,14 @@ function buildYelRecord(): Partial<BookkeepingRecord> {
 
 function buildPianoStudentPaymentRecord(a: string): Partial<BookkeepingRecord> {
   return pipe(getAccount('TEACHING'), buildRecord(`Soitonopetus ${a}`));
+}
+
+function buildPhoneExpenseRecord(): Partial<BookkeepingRecord> {
+  return pipe(
+    getAccount('PHONE_EXPENSE'),
+    buildRecord('Puhelinkulut 50%'),
+    amountUnknown,
+  );
 }
 
 function buildPerformanceRecord(a: string): Partial<BookkeepingRecord> {
@@ -71,6 +84,8 @@ const guessPartsFromTransaction = (ps: PianoStudentType[]) => (
   } else if (isPianoStudentPayment(ps)(transaction)) {
     const payeeNameParts = transaction[TRANSACTION_PAYEE_PAYER_KEY].split(' ');
     return buildPianoStudentPaymentRecord(payeeNameParts[0]);
+  } else if (isPhoneExpense(transaction)) {
+    return buildPhoneExpenseRecord();
   } else if (isPerformance(transaction)) {
     return buildPerformanceRecord(transaction[TRANSACTION_PAYEE_PAYER_KEY]);
   } else {
@@ -82,7 +97,7 @@ export const fromTransaction = (ps: PianoStudentType[]) => (
   transaction: Transaction,
 ): BookkeepingRecord => {
   const partial = guessPartsFromTransaction(ps)(transaction);
-  const account = partial.account || accountFromTransaction(transaction);
+  const account = partial.account || fromDefault();
   const tax = getTax(transaction.amount, account.taxPercentage);
   const defaultRecord: BookkeepingRecord = {
     description: 'UNKNOWN',

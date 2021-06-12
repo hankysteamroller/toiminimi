@@ -37,3 +37,9 @@ export const isPianoStudentPayment = (students: PianoStudentType[]) => (
 
 export const isPerformance = (transaction: Transaction) =>
   isIncome(transaction);
+
+const PHONE_CARRIER = 'Telia Finland Oyj';
+const isPaidToPhoneCarrier = (transaction: Transaction) =>
+  transaction[TRANSACTION_PAYEE_PAYER_KEY] === PHONE_CARRIER;
+export const isPhoneExpense = (transaction: Transaction) =>
+  [isExpense, isPaidToPhoneCarrier].every((a) => a(transaction));

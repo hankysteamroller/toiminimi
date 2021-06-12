@@ -1,2 +1,1 @@
-- Jos <Saaja/Maksaja> on "Telia Finland Oyj" JA <Määrä> -10 - -100 -> Puhelinkulut 50% Muut vähennyskelpoiset kulut 24% <Määrä>/2
 - Jos <Saaja/Maksaja> on "OSUUSPANKKI" JA <Viesti> sisältää "PALVELUMAKSUT" -> 2 riviä: Pankin palvelumaksu Muut vähennyskelpoiset kulut 0% ja E-laskutus Muut vähennyskelpoiset kulu 24%
