@@ -8,6 +8,12 @@ export function getAccount(subType: IncomeSubType | ExpenseSubType): Account {
         group: 300,
         taxPercentage: 0,
       };
+    case 'TEACHING':
+      return {
+        name: 'Myynti - Suomi 24%',
+        group: 300,
+        taxPercentage: 24,
+      };
     case 'DOMAIN_MONTHLY':
       return {
         name: 'Muut vähennyskelpoiset kulut - 24%',

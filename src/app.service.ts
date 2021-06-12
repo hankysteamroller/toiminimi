@@ -2,8 +2,8 @@ import * as fs from 'fs';
 import { Inject, Injectable } from '@nestjs/common';
 import { promisify } from 'util';
 
-import { flow, pipe } from 'fp-ts/function';
-import { chainEitherK, map, TaskEither, tryCatchK } from 'fp-ts/TaskEither';
+import { pipe } from 'fp-ts/function';
+import * as TE from 'fp-ts/TaskEither';
 import { toError } from 'fp-ts/Either';
 
 import { AppConfig } from './app.config';
@@ -12,16 +12,19 @@ import { Err, fromCsvString } from './domain/transaction';
 import { applyFilters } from './domain/transaction-filters';
 import {
   BookkeepingRecord,
+  PianoStudentType,
   TransactionFilter,
+  Transaction,
   Transactions,
 } from './domain/types';
 import { getMetas } from './domain/transaction-meta';
 import { fromTransactionList } from './domain/transactions';
 import { fromTransaction } from './domain/bookkeeping-record';
+import { fromFile } from './domain/piano-student';
 
-const fpReadFile = tryCatchK(promisify(fs.readFile), toError);
+const fpReadFile = TE.tryCatchK(promisify(fs.readFile), toError);
 const fpReadFileUTF = (path: string) =>
-  fpReadFile(path, 'utf-8') as TaskEither<Error, string>;
+  fpReadFile(path, 'utf-8') as TE.TaskEither<Error, string>;
 
 @Injectable()
 export class AppService {
@@ -32,25 +35,40 @@ export class AppService {
   getTransactions(
     path: string,
     filters: TransactionFilter[],
-  ): TaskEither<Err, Transactions> {
+  ): TE.TaskEither<Err, Transaction[]> {
     return pipe(
       fpReadFileUTF(path),
-      chainEitherK(fromCsvString),
-      map(applyFilters(filters)),
-      map(getMetas),
-      map(fromTransactionList),
+      TE.chainEitherK(fromCsvString),
+      TE.map(applyFilters(filters)),
+    );
+  }
+
+  getTransactionsWithMeta(
+    path: string,
+    filters: TransactionFilter[],
+  ): TE.TaskEither<Err, Transactions> {
+    return pipe(
+      fpReadFileUTF(path),
+      TE.chainEitherK(fromCsvString),
+      TE.map(applyFilters(filters)),
+      TE.map(getMetas),
+      TE.map(fromTransactionList),
     );
   }
 
   getBookkeepingRecords(
     path: string,
     filters: TransactionFilter[],
-  ): TaskEither<Err, BookkeepingRecord[]> {
+  ): TE.TaskEither<Err, BookkeepingRecord[]> {
     return pipe(
-      fpReadFileUTF(path),
-      chainEitherK(fromCsvString),
-      map(applyFilters(filters)),
-      map((ts) => ts.map(fromTransaction)),
+      TE.Do,
+      TE.bind('ps', () => this.getPianoStudents('data/students.csv')),
+      TE.bind('ts', () => this.getTransactions(path, filters)),
+      TE.map(({ ps, ts }) => ts.map(fromTransaction(ps))),
     );
+  }
+
+  getPianoStudents(path: string): TE.TaskEither<Error, PianoStudentType[]> {
+    return pipe(fpReadFileUTF(path), TE.chainEitherK(fromFile));
   }
 }

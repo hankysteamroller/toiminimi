@@ -3,6 +3,7 @@ import { pipe } from 'fp-ts/function';
 import {
   Account,
   BookkeepingRecord,
+  PianoStudentType,
   Transaction,
   TRANSACTION_PAYEE_PAYER_KEY,
 } from './types';
@@ -11,7 +12,11 @@ import {
   fromTransaction as accountFromTransaction,
 } from './account';
 import { getTax } from './tax';
-import { isDomainMonthlyTransaction } from './transaction-classifiers';
+import {
+  isDomainMonthlyTransaction,
+  isPerformance,
+  isPianoStudentPayment,
+} from './transaction-classifiers';
 
 const buildRecord: (
   description: string,
@@ -22,10 +27,6 @@ const buildRecord: (
   description,
   taxPercentage: account.taxPercentage,
 });
-
-function buildGreetingRecord(a: string): Partial<BookkeepingRecord> {
-  return pipe(getAccount('PERFORMANCE'), buildRecord(`Esiintyminen ${a}`));
-}
 
 function buildDomainMonthlyRecord(): Partial<BookkeepingRecord> {
   return pipe(
@@ -42,12 +43,18 @@ function buildYelRecord(): Partial<BookkeepingRecord> {
   return pipe(getAccount('YEL'), buildRecord('YEL-perusvakuutus'));
 }
 
-function guessPartsFromTransaction(
+function buildPianoStudentPaymentRecord(a: string): Partial<BookkeepingRecord> {
+  return pipe(getAccount('TEACHING'), buildRecord(`Soitonopetus ${a}`));
+}
+
+function buildPerformanceRecord(a: string): Partial<BookkeepingRecord> {
+  return pipe(getAccount('PERFORMANCE'), buildRecord(`Esiintyminen ${a}`));
+}
+
+const guessPartsFromTransaction = (ps: PianoStudentType[]) => (
   transaction: Transaction,
-): Partial<BookkeepingRecord> {
-  if (transaction.amount === 25) {
-    return buildGreetingRecord(transaction[TRANSACTION_PAYEE_PAYER_KEY]);
-  } else if (isDomainMonthlyTransaction(transaction)) {
+): Partial<BookkeepingRecord> => {
+  if (isDomainMonthlyTransaction(transaction)) {
     return buildDomainMonthlyRecord();
   } else if (
     transaction.amount === -9 &&
@@ -61,13 +68,20 @@ function guessPartsFromTransaction(
     transaction[TRANSACTION_PAYEE_PAYER_KEY] === 'ILMARINEN KESKIN�INEN VAKYHT'
   ) {
     return buildYelRecord();
+  } else if (isPianoStudentPayment(ps)(transaction)) {
+    const payeeNameParts = transaction[TRANSACTION_PAYEE_PAYER_KEY].split(' ');
+    return buildPianoStudentPaymentRecord(payeeNameParts[0]);
+  } else if (isPerformance(transaction)) {
+    return buildPerformanceRecord(transaction[TRANSACTION_PAYEE_PAYER_KEY]);
   } else {
     return {};
   }
-}
+};
 
-export function fromTransaction(transaction: Transaction): BookkeepingRecord {
-  const partial = guessPartsFromTransaction(transaction);
+export const fromTransaction = (ps: PianoStudentType[]) => (
+  transaction: Transaction,
+): BookkeepingRecord => {
+  const partial = guessPartsFromTransaction(ps)(transaction);
   const account = partial.account || accountFromTransaction(transaction);
   const tax = getTax(transaction.amount, account.taxPercentage);
   const defaultRecord: BookkeepingRecord = {
@@ -83,4 +97,4 @@ export function fromTransaction(transaction: Transaction): BookkeepingRecord {
     ...defaultRecord,
     ...partial,
   };
-}
+};

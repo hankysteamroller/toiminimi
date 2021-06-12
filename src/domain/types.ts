@@ -41,7 +41,7 @@ export type TransactionFilterType = 'own';
 export type TransactionFilter = (a: Transaction[]) => Transaction[];
 
 export type BookkeepingRecordType = 'INCOME' | 'EXPENSE';
-export type IncomeSubType = 'PERFORMANCE';
+export type IncomeSubType = 'PERFORMANCE' | 'TEACHING';
 export type ExpenseSubType = 'DOMAIN_MONTHLY' | 'DOMAIN_YEARLY' | 'YEL';
 
 type AccountGroup = number;

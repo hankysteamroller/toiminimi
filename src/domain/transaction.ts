@@ -16,7 +16,7 @@ import { sequenceT } from 'fp-ts/Apply';
 
 import { CsvParseErr, parseC } from '../utils/csv';
 import { isMoney } from './typeguards';
-import { liftToArrayOfErrs2, trace } from '../fp-utils';
+import { liftToArrayOfErrs2 } from '../fp-utils';
 import { Money, Transaction, TRANSACTION_PAYEE_PAYER_KEY } from './types';
 
 type TransactionParseFieldErr = string;
