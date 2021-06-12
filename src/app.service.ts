@@ -62,9 +62,11 @@ export class AppService {
   ): TE.TaskEither<Err, BookkeepingRecord[]> {
     return pipe(
       TE.Do,
-      TE.bind('ps', () => this.getPianoStudents('data/students.csv')),
-      TE.bind('ts', () => this.getTransactions(path, filters)),
-      TE.map(({ ps, ts }) => ts.map(fromTransaction(ps))),
+      TE.apS('students', this.getPianoStudents('data/students.csv')),
+      TE.apS('transactions', this.getTransactions(path, filters)),
+      TE.map(({ students, transactions }) =>
+        transactions.map(fromTransaction(students)),
+      ),
     );
   }
 
