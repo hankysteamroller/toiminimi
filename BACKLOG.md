@@ -1,1 +1,1 @@
-- Jos <Saaja/Maksaja> on "OSUUSPANKKI" JA <Viesti> sisältää "PALVELUMAKSUT" -> 2 riviä: Pankin palvelumaksu Muut vähennyskelpoiset kulut 0% ja E-laskutus Muut vähennyskelpoiset kulu 24%
+- Add an option to write generated bookkeeping rows to csv-file
