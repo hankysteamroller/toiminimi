@@ -1,3 +1,5 @@
+import * as A from 'fp-ts/Array';
+import * as O from 'fp-ts/Option';
 import { pipe } from 'fp-ts/function';
 
 import {
@@ -89,8 +91,16 @@ const getRecordBuilders = (ps: PianoStudentType[]) => (
   } else if (isPensionFundExpense(transaction)) {
     return [buildYelRecord];
   } else if (isPianoStudentPayment(ps)(transaction)) {
-    const payeeNameParts = transaction[TRANSACTION_PAYEE_PAYER_KEY].split(' ');
-    return [buildPianoStudentPaymentRecord(payeeNameParts[0])];
+    return [
+      pipe(
+        transaction[TRANSACTION_PAYEE_PAYER_KEY].split(' '),
+        A.head,
+        O.fold(
+          () => buildPianoStudentPaymentRecord('Tuntematon'),
+          buildPianoStudentPaymentRecord,
+        ),
+      ),
+    ];
   } else if (isPhoneExpense(transaction)) {
     return [buildPhoneExpenseRecord];
   } else if (isBankExpense(transaction)) {
