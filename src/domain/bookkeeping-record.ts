@@ -7,9 +7,10 @@ import {
   Transaction,
   TRANSACTION_PAYEE_PAYER_KEY,
 } from './types';
-import { getAccount, fromDefault } from './account';
+import { getAccount, getDefault as getDefaultAccount } from './account';
 import { getTax } from './tax';
 import {
+  isBankExpense,
   isDomainMonthlyTransaction,
   isPerformance,
   isPhoneExpense,
@@ -33,83 +34,96 @@ const amountUnknown = (
   totalAmount: 0,
 });
 
-function buildDomainMonthlyRecord(): Partial<BookkeepingRecord> {
-  return pipe(
-    getAccount('DOMAIN_MONTHLY'),
-    buildRecord('Domainhotelli kk-maksu'),
-  );
-}
+const getDefaultRecord = (transaction: Transaction): BookkeepingRecord => ({
+  description: 'UNKNOWN',
+  type: transaction.amount > 0 ? 'INCOME' : 'EXPENSE',
+  nonTaxAmount: 0,
+  taxPercentage: 0,
+  taxAmount: 0,
+  totalAmount: transaction.amount,
+  account: getDefaultAccount(),
+});
 
-function buildDomainYearlyRecord(): Partial<BookkeepingRecord> {
-  return pipe(getAccount('DOMAIN_YEARLY'), buildRecord('Domainin vuosimaksu'));
-}
+const buildDomainMonthlyRecord = (): Partial<BookkeepingRecord> =>
+  pipe(getAccount('DOMAIN_MONTHLY'), buildRecord('Domainhotelli kk-maksu'));
 
-function buildYelRecord(): Partial<BookkeepingRecord> {
-  return pipe(getAccount('YEL'), buildRecord('YEL-perusvakuutus'));
-}
+const buildDomainYearlyRecord = (): Partial<BookkeepingRecord> =>
+  pipe(getAccount('DOMAIN_YEARLY'), buildRecord('Domainin vuosimaksu'));
 
-function buildPianoStudentPaymentRecord(a: string): Partial<BookkeepingRecord> {
-  return pipe(getAccount('TEACHING'), buildRecord(`Soitonopetus ${a}`));
-}
+const buildYelRecord = (): Partial<BookkeepingRecord> =>
+  pipe(getAccount('YEL'), buildRecord('YEL-perusvakuutus'));
 
-function buildPhoneExpenseRecord(): Partial<BookkeepingRecord> {
-  return pipe(
+const buildPianoStudentPaymentRecord = (a: string) => (): Partial<
+  BookkeepingRecord
+> => pipe(getAccount('TEACHING'), buildRecord(`Soitonopetus ${a}`));
+
+const buildPhoneExpenseRecord = (): Partial<BookkeepingRecord> =>
+  pipe(
     getAccount('PHONE_EXPENSE'),
     buildRecord('Puhelinkulut 50%'),
     amountUnknown,
   );
-}
 
-function buildPerformanceRecord(a: string): Partial<BookkeepingRecord> {
-  return pipe(getAccount('PERFORMANCE'), buildRecord(`Esiintyminen ${a}`));
-}
+const buildBankServiceFeeRecord = (): Partial<BookkeepingRecord> =>
+  pipe(
+    getAccount('BANK_SERVICE_FEE'),
+    buildRecord('Pankin palvelumaksu'),
+    amountUnknown,
+  );
 
-const guessPartsFromTransaction = (ps: PianoStudentType[]) => (
+const buildBankEBillingRecord = (): Partial<BookkeepingRecord> =>
+  pipe(getAccount('BANK_E_BILLING'), buildRecord('E-laskutus'), amountUnknown);
+
+const buildPerformanceRecord = (a: string) => (): Partial<BookkeepingRecord> =>
+  pipe(getAccount('PERFORMANCE'), buildRecord(`Esiintyminen ${a}`));
+
+const getRecordBuilders = (ps: PianoStudentType[]) => (
   transaction: Transaction,
-): Partial<BookkeepingRecord> => {
+): (() => Partial<BookkeepingRecord>)[] => {
   if (isDomainMonthlyTransaction(transaction)) {
-    return buildDomainMonthlyRecord();
+    return [buildDomainMonthlyRecord];
   } else if (
     transaction.amount === -9 &&
     transaction[TRANSACTION_PAYEE_PAYER_KEY] === 'Paybyway Oy' &&
     transaction.message === 'DOMAINHOTELLI.FI DOMAINHOTELLI OY'
   ) {
-    return buildDomainYearlyRecord();
+    return [buildDomainYearlyRecord];
   } else if (
     transaction.amount > 280 &&
     transaction.amount < 320 &&
     transaction[TRANSACTION_PAYEE_PAYER_KEY] === 'ILMARINEN KESKIN�INEN VAKYHT'
   ) {
-    return buildYelRecord();
+    return [buildYelRecord];
   } else if (isPianoStudentPayment(ps)(transaction)) {
     const payeeNameParts = transaction[TRANSACTION_PAYEE_PAYER_KEY].split(' ');
-    return buildPianoStudentPaymentRecord(payeeNameParts[0]);
+    return [buildPianoStudentPaymentRecord(payeeNameParts[0])];
   } else if (isPhoneExpense(transaction)) {
-    return buildPhoneExpenseRecord();
+    return [buildPhoneExpenseRecord];
+  } else if (isBankExpense(transaction)) {
+    return [buildBankServiceFeeRecord, buildBankEBillingRecord];
   } else if (isPerformance(transaction)) {
-    return buildPerformanceRecord(transaction[TRANSACTION_PAYEE_PAYER_KEY]);
+    return [buildPerformanceRecord(transaction[TRANSACTION_PAYEE_PAYER_KEY])];
   } else {
-    return {};
+    return [() => getDefaultRecord(transaction)];
   }
 };
 
-export const fromTransaction = (ps: PianoStudentType[]) => (
-  transaction: Transaction,
-): BookkeepingRecord => {
-  const partial = guessPartsFromTransaction(ps)(transaction);
-  const account = partial.account || fromDefault();
-  const tax = getTax(transaction.amount, account.taxPercentage);
-  const defaultRecord: BookkeepingRecord = {
-    description: 'UNKNOWN',
-    type: transaction.amount > 0 ? 'INCOME' : 'EXPENSE',
-    nonTaxAmount: transaction.amount - tax,
-    taxPercentage: account.taxPercentage,
-    taxAmount: tax,
-    totalAmount: transaction.amount,
-  };
-
+const fillTax = (record: BookkeepingRecord): BookkeepingRecord => {
+  const tax = getTax(record.totalAmount, record.account.taxPercentage);
   return {
-    ...defaultRecord,
-    ...partial,
+    ...record,
+    nonTaxAmount: record.totalAmount - tax,
+    taxPercentage: record.account.taxPercentage,
+    taxAmount: tax,
   };
 };
+
+const fromBuilder = (transaction: Transaction) => (
+  builder: () => Partial<BookkeepingRecord>,
+): BookkeepingRecord =>
+  pipe({ ...getDefaultRecord(transaction), ...builder() }, fillTax);
+
+export const manyFromTransaction = (ps: PianoStudentType[]) => (
+  transaction: Transaction,
+): BookkeepingRecord[] =>
+  getRecordBuilders(ps)(transaction).map(fromBuilder(transaction));

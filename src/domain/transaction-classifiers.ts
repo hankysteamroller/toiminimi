@@ -43,3 +43,9 @@ const isPaidToPhoneCarrier = (transaction: Transaction) =>
   transaction[TRANSACTION_PAYEE_PAYER_KEY] === PHONE_CARRIER;
 export const isPhoneExpense = (transaction: Transaction) =>
   [isExpense, isPaidToPhoneCarrier].every((a) => a(transaction));
+
+const BANK_SERVICE_PROVIDER = 'OSUUSPANKKI';
+const isPaidToBankServiceProvider = (transaction: Transaction) =>
+  transaction[TRANSACTION_PAYEE_PAYER_KEY] === BANK_SERVICE_PROVIDER;
+export const isBankExpense = (transaction: Transaction) =>
+  [isExpense, isPaidToBankServiceProvider].every((a) => a(transaction));

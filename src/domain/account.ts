@@ -1,4 +1,4 @@
-import { Account, ExpenseSubType, IncomeSubType, Transaction } from './types';
+import { Account, ExpenseSubType, IncomeSubType } from './types';
 
 export function getAccount(subType: IncomeSubType | ExpenseSubType): Account {
   switch (subType) {
@@ -12,6 +12,18 @@ export function getAccount(subType: IncomeSubType | ExpenseSubType): Account {
       return {
         name: 'Myynti - Suomi 24%',
         group: 300,
+        taxPercentage: 24,
+      };
+    case 'BANK_SERVICE_FEE':
+      return {
+        name: 'Muut vähennyskelpoiset kulut - 0%',
+        group: 344,
+        taxPercentage: 0,
+      };
+    case 'BANK_E_BILLING':
+      return {
+        name: 'Muut vähennyskelpoiset kulut - 24%',
+        group: 344,
         taxPercentage: 24,
       };
     case 'DOMAIN_MONTHLY':
@@ -41,7 +53,7 @@ export function getAccount(subType: IncomeSubType | ExpenseSubType): Account {
   }
 }
 
-export function fromDefault(): Account {
+export function getDefault(): Account {
   return {
     name: 'Myynti - Suomi 0%',
     group: 300,

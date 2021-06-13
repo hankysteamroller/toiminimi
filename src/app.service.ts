@@ -2,8 +2,9 @@ import * as fs from 'fs';
 import { Inject, Injectable } from '@nestjs/common';
 import { promisify } from 'util';
 
-import { pipe } from 'fp-ts/function';
+import * as A from 'fp-ts/Array';
 import * as TE from 'fp-ts/TaskEither';
+import { pipe } from 'fp-ts/function';
 import { toError } from 'fp-ts/Either';
 
 import { AppConfig } from './app.config';
@@ -19,7 +20,7 @@ import {
 } from './domain/types';
 import { getMetas } from './domain/transaction-meta';
 import { fromTransactionList } from './domain/transactions';
-import { fromTransaction } from './domain/bookkeeping-record';
+import { manyFromTransaction } from './domain/bookkeeping-record';
 import { fromFile } from './domain/piano-student';
 
 const fpReadFile = TE.tryCatchK(promisify(fs.readFile), toError);
@@ -65,7 +66,7 @@ export class AppService {
       TE.apS('students', this.getPianoStudents('data/students.csv')),
       TE.apS('transactions', this.getTransactions(path, filters)),
       TE.map(({ students, transactions }) =>
-        transactions.map(fromTransaction(students)),
+        pipe(transactions.map(manyFromTransaction(students)), A.flatten),
       ),
     );
   }
