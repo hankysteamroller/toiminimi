@@ -12,6 +12,8 @@ import { getTax } from './tax';
 import {
   isBankExpense,
   isDomainMonthlyTransaction,
+  isDomainYearlyTransaction,
+  isPensionFundExpense,
   isPerformance,
   isPhoneExpense,
   isPianoStudentPayment,
@@ -82,17 +84,9 @@ const getRecordBuilders = (ps: PianoStudentType[]) => (
 ): (() => Partial<BookkeepingRecord>)[] => {
   if (isDomainMonthlyTransaction(transaction)) {
     return [buildDomainMonthlyRecord];
-  } else if (
-    transaction.amount === -9 &&
-    transaction[TRANSACTION_PAYEE_PAYER_KEY] === 'Paybyway Oy' &&
-    transaction.message === 'DOMAINHOTELLI.FI DOMAINHOTELLI OY'
-  ) {
+  } else if (isDomainYearlyTransaction(transaction)) {
     return [buildDomainYearlyRecord];
-  } else if (
-    transaction.amount > 280 &&
-    transaction.amount < 320 &&
-    transaction[TRANSACTION_PAYEE_PAYER_KEY] === 'ILMARINEN KESKIN�INEN VAKYHT'
-  ) {
+  } else if (isPensionFundExpense(transaction)) {
     return [buildYelRecord];
   } else if (isPianoStudentPayment(ps)(transaction)) {
     const payeeNameParts = transaction[TRANSACTION_PAYEE_PAYER_KEY].split(' ');
@@ -108,20 +102,18 @@ const getRecordBuilders = (ps: PianoStudentType[]) => (
   }
 };
 
-const fillTax = (record: BookkeepingRecord): BookkeepingRecord => {
-  const tax = getTax(record.totalAmount, record.account.taxPercentage);
-  return {
+const fillTaxInfo = (record: BookkeepingRecord): BookkeepingRecord =>
+  pipe(getTax(record.totalAmount, record.account.taxPercentage), (tax) => ({
     ...record,
     nonTaxAmount: record.totalAmount - tax,
     taxPercentage: record.account.taxPercentage,
     taxAmount: tax,
-  };
-};
+  }));
 
 const fromBuilder = (transaction: Transaction) => (
   builder: () => Partial<BookkeepingRecord>,
 ): BookkeepingRecord =>
-  pipe({ ...getDefaultRecord(transaction), ...builder() }, fillTax);
+  pipe({ ...getDefaultRecord(transaction), ...builder() }, fillTaxInfo);
 
 export const manyFromTransaction = (ps: PianoStudentType[]) => (
   transaction: Transaction,
