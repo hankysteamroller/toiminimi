@@ -38,7 +38,7 @@ const amountUnknown = (
   totalAmount: 0,
 });
 
-const getDefaultRecord = (transaction: Transaction): BookkeepingRecord => ({
+const getTemplateRecord = (transaction: Transaction): BookkeepingRecord => ({
   description: 'UNKNOWN',
   type: transaction.amount > 0 ? 'INCOME' : 'EXPENSE',
   nonTaxAmount: 0,
@@ -83,34 +83,41 @@ const buildPerformanceRecord = (a: string) => (): Partial<BookkeepingRecord> =>
 
 const getRecordBuilders = (ps: PianoStudentType[]) => (
   transaction: Transaction,
-): (() => Partial<BookkeepingRecord>)[] => {
-  if (isDomainMonthlyTransaction(transaction)) {
-    return [buildDomainMonthlyRecord];
-  } else if (isDomainYearlyTransaction(transaction)) {
-    return [buildDomainYearlyRecord];
-  } else if (isPensionFundExpense(transaction)) {
-    return [buildYelRecord];
-  } else if (isPianoStudentPayment(ps)(transaction)) {
-    return [
-      pipe(
-        transaction[TRANSACTION_PAYEE_PAYER_KEY].split(' '),
-        A.head,
-        O.fold(
-          () => buildPianoStudentPaymentRecord('Tuntematon'),
-          buildPianoStudentPaymentRecord,
-        ),
-      ),
-    ];
-  } else if (isPhoneExpense(transaction)) {
-    return [buildPhoneExpenseRecord];
-  } else if (isBankExpense(transaction)) {
-    return [buildBankServiceFeeRecord, buildBankEBillingRecord];
-  } else if (isPerformance(transaction)) {
-    return [buildPerformanceRecord(transaction[TRANSACTION_PAYEE_PAYER_KEY])];
-  } else {
-    return [() => getDefaultRecord(transaction)];
-  }
-};
+): O.Option<(() => Partial<BookkeepingRecord>)[]> =>
+  pipe(
+    () => {
+      if (isDomainMonthlyTransaction(transaction)) {
+        return [buildDomainMonthlyRecord];
+      } else if (isDomainYearlyTransaction(transaction)) {
+        return [buildDomainYearlyRecord];
+      } else if (isPensionFundExpense(transaction)) {
+        return [buildYelRecord];
+      } else if (isPianoStudentPayment(ps)(transaction)) {
+        return [
+          pipe(
+            transaction[TRANSACTION_PAYEE_PAYER_KEY].split(' '),
+            A.head,
+            O.fold(
+              () => buildPianoStudentPaymentRecord('Tuntematon'),
+              buildPianoStudentPaymentRecord,
+            ),
+          ),
+        ];
+      } else if (isPhoneExpense(transaction)) {
+        return [buildPhoneExpenseRecord];
+      } else if (isBankExpense(transaction)) {
+        return [buildBankServiceFeeRecord, buildBankEBillingRecord];
+      } else if (isPerformance(transaction)) {
+        return [
+          buildPerformanceRecord(transaction[TRANSACTION_PAYEE_PAYER_KEY]),
+        ];
+      } else {
+        return [];
+      }
+    },
+    (f) => f(),
+    O.fromPredicate((builders) => builders.length > 0),
+  );
 
 const fillTaxInfo = (record: BookkeepingRecord): BookkeepingRecord =>
   pipe(getTax(record.totalAmount, record.account.taxPercentage), (tax) => ({
@@ -123,9 +130,15 @@ const fillTaxInfo = (record: BookkeepingRecord): BookkeepingRecord =>
 const fromBuilder = (transaction: Transaction) => (
   builder: () => Partial<BookkeepingRecord>,
 ): BookkeepingRecord =>
-  pipe({ ...getDefaultRecord(transaction), ...builder() }, fillTaxInfo);
+  pipe({ ...getTemplateRecord(transaction), ...builder() }, fillTaxInfo);
 
 export const manyFromTransaction = (ps: PianoStudentType[]) => (
   transaction: Transaction,
 ): BookkeepingRecord[] =>
-  getRecordBuilders(ps)(transaction).map(fromBuilder(transaction));
+  pipe(
+    getRecordBuilders(ps)(transaction),
+    O.fold(
+      () => [getTemplateRecord(transaction)],
+      (builders) => builders.map(fromBuilder(transaction)),
+    ),
+  );
