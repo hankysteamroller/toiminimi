@@ -38,7 +38,7 @@ export class AppController {
       `./data/${name}.${suffix}`,
       transactionFilters,
     );
-    return service().then((a) => foldW(onError, serializeTransactions)(a));
+    return service().then(foldW(onError, serializeTransactions));
   }
 
   @Get('/records/:name/:suffix')
@@ -52,9 +52,7 @@ export class AppController {
       `./data/${name}.${suffix}`,
       transactionFilters,
     );
-    return service().then((a) =>
-      foldW(onError, serializeBookkeepingRecords)(a),
-    );
+    return service().then(foldW(onError, serializeBookkeepingRecords));
   }
 
   @Get('pianostudents/:name/:suffix')
@@ -63,6 +61,6 @@ export class AppController {
     @Param('suffix') suffix: string,
   ) {
     const service = this.appService.getPianoStudents(`data/${name}.${suffix}`);
-    return service().then((a) => foldW(onError, serializePianoStudents)(a));
+    return service().then(foldW(onError, serializePianoStudents));
   }
 }
