@@ -1,27 +1,19 @@
 import {
   Controller,
+  BadRequestException,
   Get,
-  InternalServerErrorException,
   Param,
   Query,
 } from '@nestjs/common';
 
-import { foldW } from 'fp-ts/Either';
+import * as E from 'fp-ts/Either';
 
 import { AppService } from './app.service';
-import { Err } from './domain/transaction';
 import { fromString } from './domain/transaction-filters';
-import {
-  BookkeepingRecord,
-  PianoStudentType,
-  Transactions,
-} from './domain/types';
-import { serialize } from './view/transactions.view';
+import { serialize as serializeTransactions } from './view/transactions.view';
 
-const onError = (e: Err) => new InternalServerErrorException(e);
-const serializeTransactions = (a: Transactions) => serialize(a);
-const serializeBookkeepingRecords = (a: BookkeepingRecord[]) => a;
-const serializePianoStudents = (a: PianoStudentType[]) => a;
+const onError = <E>(e: E) => new BadRequestException(e);
+const serialize = <T>(a: T[]) => a;
 
 @Controller()
 export class AppController {
@@ -33,12 +25,12 @@ export class AppController {
     @Param('suffix') suffix: string,
     @Query('filters') filters: string,
   ) {
-    const transactionFilters = fromString(filters);
-    const service = this.appService.getTransactionsWithMeta(
-      `./data/${name}.${suffix}`,
-      transactionFilters,
-    );
-    return service().then(foldW(onError, serializeTransactions));
+    return this.appService
+      .getTransactionsWithMeta(
+        `./data/${name}.${suffix}`,
+        fromString(filters),
+      )()
+      .then(E.foldW(onError, serializeTransactions));
   }
 
   @Get('/records/:name/:suffix')
@@ -47,12 +39,9 @@ export class AppController {
     @Param('suffix') suffix: string,
     @Query('filters') filters: string,
   ) {
-    const transactionFilters = fromString(filters);
-    const service = this.appService.getBookkeepingRecords(
-      `./data/${name}.${suffix}`,
-      transactionFilters,
-    );
-    return service().then(foldW(onError, serializeBookkeepingRecords));
+    return this.appService
+      .getBookkeepingRecords(`./data/${name}.${suffix}`, fromString(filters))()
+      .then(E.foldW(onError, serialize));
   }
 
   @Get('pianostudents/:name/:suffix')
@@ -60,7 +49,8 @@ export class AppController {
     @Param('name') name: string,
     @Param('suffix') suffix: string,
   ) {
-    const service = this.appService.getPianoStudents(`data/${name}.${suffix}`);
-    return service().then(foldW(onError, serializePianoStudents));
+    return this.appService
+      .getPianoStudents(`data/${name}.${suffix}`)()
+      .then(E.foldW(onError, serialize));
   }
 }
