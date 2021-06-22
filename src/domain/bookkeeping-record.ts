@@ -39,6 +39,7 @@ const amountUnknown = (
 });
 
 const getTemplateRecord = (transaction: Transaction): BookkeepingRecord => ({
+  date: transaction.transactionDate,
   description: 'UNKNOWN',
   type: transaction.amount > 0 ? 'INCOME' : 'EXPENSE',
   nonTaxAmount: 0,

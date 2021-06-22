@@ -64,7 +64,8 @@ export interface AccountMap {
 }
 
 export interface BookkeepingRecord {
-  account?: Account;
+  account: Account;
+  date: DateTime;
   description: string;
   type: BookkeepingRecordType;
   nonTaxAmount: Money;
