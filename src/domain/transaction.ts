@@ -7,14 +7,14 @@ import * as E from 'fp-ts/Either';
 import { pipe } from 'fp-ts/function';
 import { sequenceT } from 'fp-ts/Apply';
 
-import { CsvParseErr, parseC } from '../utils/csv';
+import { parseC } from '../utils/csv';
 import { isMoney } from './typeguards';
 import { liftToArrayOfErrs2 } from '../fp-utils';
 import { Money, Transaction, TRANSACTION_PAYEE_PAYER_KEY } from './types';
 
 type TransactionParseFieldErr = string;
 type TransactionParseErr = NEA.NonEmptyArray<TransactionParseFieldErr>;
-export type Err = CsvParseErr | TransactionParseErr;
+export type Err = Error | TransactionParseErr;
 
 const AMOUNT_KEY = 'M\uFFFD\uFFFDr\uFFFD EUROA';
 const MESSAGE_KEY = 'Viesti';
