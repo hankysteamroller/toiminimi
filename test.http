@@ -1,3 +1,4 @@
+http://localhost:3000/records/save/events-03/csv?filters=own
 http://localhost:3000/records/events-03/csv?filters=own
 http://localhost:3000/transactions/events-03/csv?filters=own
 http://localhost:3000/pianostudents/students/csv

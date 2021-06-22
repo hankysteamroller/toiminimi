@@ -44,6 +44,17 @@ export class AppController {
       .then(E.foldW(onError, serialize));
   }
 
+  @Get('/records/save/:name/:suffix')
+  saveBookkeepingRecords(
+    @Param('name') name: string,
+    @Param('suffix') suffix: string,
+    @Query('filters') filters: string,
+  ) {
+    return this.appService
+      .saveBookkeepingRecords(`./data/${name}.${suffix}`, fromString(filters))()
+      .then(E.foldW(onError, serialize));
+  }
+
   @Get('pianostudents/:name/:suffix')
   getPianoStudents(
     @Param('name') name: string,
