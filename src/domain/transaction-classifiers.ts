@@ -20,15 +20,13 @@ const amountEqualsDomainMonthlyFee = (transaction: Transaction) =>
   Math.abs(transaction.amount) === DOMAIN_PROVIDER_MONTHLY_FEE;
 const amountEqualsDomainYearlyFee = (transaction: Transaction) =>
   Math.abs(transaction.amount) === DOMAIN_PROVIDER_YEARLY_FEE;
-const isPaidToDomainProvider = (transaction: Transaction) =>
-  transaction[TRANSACTION_PAYEE_PAYER_KEY] === DOMAIN_PROVIDER;
 const hasDomainProviderMessage = (transaction: Transaction) =>
   transaction.message === DOMAIN_PROVIDER_PAYMENT_MESSAGE;
 export const isDomainMonthlyTransaction = (transaction: Transaction) =>
   [
     isExpense,
     amountEqualsDomainMonthlyFee,
-    isPaidToDomainProvider,
+    isPaidTo(DOMAIN_PROVIDER),
     hasDomainProviderMessage,
   ].every((a) => a(transaction));
 
@@ -36,7 +34,7 @@ export const isDomainYearlyTransaction = (transaction: Transaction) =>
   [
     isExpense,
     amountEqualsDomainYearlyFee,
-    isPaidToDomainProvider,
+    isPaidTo(DOMAIN_PROVIDER),
     hasDomainProviderMessage,
   ].every((a) => a(transaction));
 
@@ -55,27 +53,21 @@ export const isPerformance = (transaction: Transaction) =>
   isIncome(transaction);
 
 const PHONE_CARRIER = 'Telia Finland Oyj';
-const isPaidToPhoneCarrier = (transaction: Transaction) =>
-  transaction[TRANSACTION_PAYEE_PAYER_KEY] === PHONE_CARRIER;
 export const isPhoneExpense = (transaction: Transaction) =>
-  [isExpense, isPaidToPhoneCarrier].every((a) => a(transaction));
+  [isExpense, isPaidTo(PHONE_CARRIER)].every((a) => a(transaction));
 
 const BANK_SERVICE_PROVIDER = 'OSUUSPANKKI';
-const isPaidToBankServiceProvider = (transaction: Transaction) =>
-  transaction[TRANSACTION_PAYEE_PAYER_KEY] === BANK_SERVICE_PROVIDER;
 export const isBankExpense = (transaction: Transaction) =>
-  [isExpense, isPaidToBankServiceProvider].every((a) => a(transaction));
+  [isExpense, isPaidTo(BANK_SERVICE_PROVIDER)].every((a) => a(transaction));
 
 const PENSION_FUND = 'ILMARINEN KESKIN�INEN VAKYHT';
 const PENSION_FEE_MIN = 280;
 const PENSION_FEE_MAX = 320;
-const isPaidToPensionFund = (transaction: Transaction) =>
-  transaction[TRANSACTION_PAYEE_PAYER_KEY] === PENSION_FUND;
 export const isPensionFundExpense = (transaction: Transaction) =>
   [
     isExpense,
     isInRange(PENSION_FEE_MIN, PENSION_FEE_MAX),
-    isPaidToPensionFund,
+    isPaidTo(PENSION_FUND),
   ].every((a) => a(transaction));
 
 const VUORES_RENT_PROVIDER = 'Storyspace Oy';
