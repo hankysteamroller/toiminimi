@@ -50,6 +50,12 @@ export function getAccount(subType: IncomeSubType | ExpenseSubType): Account {
         group: 343,
         taxPercentage: 24,
       };
+    case 'VISUALS':
+      return {
+        name: 'Muut vähennyskelpoiset kulut - 0%',
+        group: 344,
+        taxPercentage: 0,
+      };
     case 'YEL':
       return {
         name: 'Eläke -ja henkilösivukulut 0%',

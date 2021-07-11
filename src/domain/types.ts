@@ -49,6 +49,7 @@ export type ExpenseSubType =
   | 'DOMAIN_YEARLY'
   | 'PHONE_EXPENSE'
   | 'RENT'
+  | 'VISUALS'
   | 'YEL';
 
 type AccountGroup = number;

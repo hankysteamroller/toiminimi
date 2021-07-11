@@ -73,3 +73,7 @@ export const isPensionFundExpense = (transaction: Transaction) =>
 const VUORES_RENT_PROVIDER = 'Storyspace Oy';
 export const isVuoresRent = (transaction: Transaction) =>
   [isExpense, isPaidTo(VUORES_RENT_PROVIDER)].every((a) => a(transaction));
+
+const VISUALS_PROVIDER = 'Valtti Koivunen';
+export const isVisualsFee = (transaction: Transaction) =>
+  [isExpense, isPaidTo(VISUALS_PROVIDER)].every((a) => a(transaction));
