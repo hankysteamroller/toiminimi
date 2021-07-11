@@ -19,6 +19,7 @@ import {
   isPerformance,
   isPhoneExpense,
   isPianoStudentPayment,
+  isVuoresRent,
 } from './transaction-classifiers';
 
 const buildRecord = (description: string) => (
@@ -82,6 +83,9 @@ const buildBankEBillingRecord = (): Partial<BookkeepingRecord> =>
 const buildPerformanceRecord = (a: string) => (): Partial<BookkeepingRecord> =>
   pipe(getAccount('PERFORMANCE'), buildRecord(`Esiintyminen ${a}`));
 
+const buildRentRecord = (): Partial<BookkeepingRecord> =>
+  pipe(getAccount('RENT'), buildRecord('Tilavuokra'));
+
 const getRecordBuilders = (ps: PianoStudentType[]) => (
   transaction: Transaction,
 ): O.Option<(() => Partial<BookkeepingRecord>)[]> =>
@@ -108,6 +112,8 @@ const getRecordBuilders = (ps: PianoStudentType[]) => (
         return [buildPhoneExpenseRecord];
       } else if (isBankExpense(transaction)) {
         return [buildBankServiceFeeRecord, buildBankEBillingRecord];
+      } else if (isVuoresRent(transaction)) {
+        return [buildRentRecord];
       } else if (isPerformance(transaction)) {
         return [
           buildPerformanceRecord(transaction[TRANSACTION_PAYEE_PAYER_KEY]),

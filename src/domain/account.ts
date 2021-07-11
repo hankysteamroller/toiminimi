@@ -44,6 +44,12 @@ export function getAccount(subType: IncomeSubType | ExpenseSubType): Account {
         group: 344,
         taxPercentage: 24,
       };
+    case 'RENT':
+      return {
+        name: 'Vuokrat',
+        group: 343,
+        taxPercentage: 24,
+      };
     case 'YEL':
       return {
         name: 'Eläke -ja henkilösivukulut 0%',

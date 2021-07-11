@@ -9,6 +9,8 @@ const isIncome = (transaction: Transaction) => transaction.amount > 0;
 const isExpense = (transaction: Transaction) => !isIncome(transaction);
 const isInRange = (min: Money, max: Money) => (transaction: Transaction) =>
   Math.abs(transaction.amount) > min && Math.abs(transaction.amount) < max;
+const isPaidTo = (provider: string) => (transaction: Transaction) =>
+  transaction[TRANSACTION_PAYEE_PAYER_KEY] === provider;
 
 const DOMAIN_PROVIDER = 'Paybyway Oy';
 const DOMAIN_PROVIDER_PAYMENT_MESSAGE = 'DOMAINHOTELLI.FI DOMAINHOTELLI OY';
@@ -75,3 +77,7 @@ export const isPensionFundExpense = (transaction: Transaction) =>
     isInRange(PENSION_FEE_MIN, PENSION_FEE_MAX),
     isPaidToPensionFund,
   ].every((a) => a(transaction));
+
+const VUORES_RENT_PROVIDER = 'Storyspace Oy';
+export const isVuoresRent = (transaction: Transaction) =>
+  [isExpense, isPaidTo(VUORES_RENT_PROVIDER)].every((a) => a(transaction));
