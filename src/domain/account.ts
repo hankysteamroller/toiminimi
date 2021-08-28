@@ -59,7 +59,7 @@ export function getAccount(subType: IncomeSubType | ExpenseSubType): Account {
     case 'YEL':
       return {
         name: 'Eläke -ja henkilösivukulut 0%',
-        group: 322,
+        group: 336,
         taxPercentage: 0,
       };
   }
