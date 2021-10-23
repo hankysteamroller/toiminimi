@@ -16,14 +16,17 @@ type TransactionParseFieldErr = string;
 type TransactionParseErr = NEA.NonEmptyArray<TransactionParseFieldErr>;
 export type Err = Error | TransactionParseErr;
 
-const AMOUNT_KEY = 'M\uFFFD\uFFFDr\uFFFD EUROA';
+const AMOUNT_KEY_V1 = 'M\uFFFD\uFFFDr\uFFFD EUROA';
+const AMOUNT_KEY_V2 = 'Määrä EUROA';
 const MESSAGE_KEY = 'Viesti';
 const PAYER_PAYEE_KEY = 'Saaja/Maksaja';
 const REFERENCE_KEY = 'Viite';
-const VALUE_DATE_KEY = 'Arvop\uFFFDiv\uFFFD';
+const VALUE_DATE_KEY_V1 = 'Arvop\uFFFDiv\uFFFD';
+const VALUE_DATE_KEY_V2 = 'Arvopäivä';
 
 export interface OpCsvTransaction {
-  [AMOUNT_KEY]: string;
+  [AMOUNT_KEY_V1]?: string;
+  [AMOUNT_KEY_V2]?: string;
   archiveId: string;
   bankBic: string;
   description: string;
@@ -33,7 +36,8 @@ export interface OpCsvTransaction {
   [REFERENCE_KEY]: string;
   transactionDate: string;
   typeCode: string;
-  [VALUE_DATE_KEY]: string;
+  [VALUE_DATE_KEY_V1]?: string;
+  [VALUE_DATE_KEY_V2]?: string;
 }
 
 const opCsvTransactionOptions: CsvParseOptions = {
@@ -62,14 +66,19 @@ function removeLeadingZeros(a: string): string {
   return a.replace(/^0+/, '');
 }
 
-const dateTimeFromFormatC = (format: string) => (a: string) =>
-  DateTime.fromFormat(a, format);
+const dateTimeFromFormatC = (formatOptions: string[]) => (a: string) => {
+  return formatOptions
+    .map(o => DateTime.fromFormat(a, o))
+    .find(d => d.isValid)
+  ??
+    DateTime.invalid('Can not create DateTime with given options');
+}
 
 function parseMoney(
   a: OpCsvTransaction,
 ): E.Either<TransactionParseFieldErr, Money> {
   return pipe(
-    a[AMOUNT_KEY],
+    a[AMOUNT_KEY_V2] ?? a[AMOUNT_KEY_V1],
     String,
     replaceCommasWithDots,
     Number,
@@ -97,8 +106,8 @@ function parseValueDate(
   a: OpCsvTransaction,
 ): E.Either<TransactionParseFieldErr, DateTime> {
   return pipe(
-    a[VALUE_DATE_KEY],
-    dateTimeFromFormatC('d.m.yyyy'),
+    a[VALUE_DATE_KEY_V2] ?? a[VALUE_DATE_KEY_V1] ?? "",
+    dateTimeFromFormatC(['d.m.yyyy', 'yyyy-m-d']),
     E.fromPredicate(
       (dt) => dt.isValid,
       (dt) =>
