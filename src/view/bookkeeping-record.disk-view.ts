@@ -14,7 +14,7 @@ interface BookkeepingRecordDiskView {
 const serializeRecord = (
   record: BookkeepingRecord,
 ): BookkeepingRecordDiskView => ({
-  Päivämäärä: record.date.toFormat('d.m.yyyy'), // '1.3.2021',
+  Päivämäärä: record.date.toFormat('d.M.yyyy'), // '1.3.2021',
   Selite: record.description,
   Tyyppi: record.type === 'EXPENSE' ? 'Kulu' : 'Tulo',
   Luokka: `${record.account.group} ${record.account.name}`,

@@ -26,7 +26,7 @@ export function serialize(transaction: Transaction): TransactionView {
       }
     : undefined;
   return {
-    Päivämäärä: transaction.transactionDate.toFormat('d.m.yyyy'),
+    Päivämäärä: transaction.transactionDate.toFormat('d.M.yyyy'),
     Määrä: transaction.amount,
     [PAYER_PAYEE_KEY]: transaction[TRANSACTION_PAYEE_PAYER_KEY],
     Viite: transaction.reference,

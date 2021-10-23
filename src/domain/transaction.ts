@@ -107,7 +107,7 @@ function parseValueDate(
 ): E.Either<TransactionParseFieldErr, DateTime> {
   return pipe(
     a[VALUE_DATE_KEY_V2] ?? a[VALUE_DATE_KEY_V1] ?? "",
-    dateTimeFromFormatC(['d.m.yyyy', 'yyyy-m-d']),
+    dateTimeFromFormatC(['dd.MM.yyyy', 'yyyy-MM-dd']),
     E.fromPredicate(
       (dt) => dt.isValid,
       (dt) =>
